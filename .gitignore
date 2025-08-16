@@ -1,8 +1,8 @@
-*.json
+# *.json
 
 .env
 .env.local
 .env.*.local
-
+adminmcp-aa2ea-firebase-adminsdk-fbsvc-13627046bc.json
 
 /node_modules
