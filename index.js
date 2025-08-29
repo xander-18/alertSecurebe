@@ -1,3 +1,4 @@
+
 import express from "express";
 import cors from "cors";
 import { initializeApp, cert } from "firebase-admin/app";
@@ -29,6 +30,7 @@ app.post("/medicion", async (req, res) => {
     const docRef = await db.collection(SENSOR_COLLECTION).add({
       sensorId,
       valor,
+      movimiento,
       fecha: new Date(),
     });
     res.json({ id: docRef.id, status: "ok" });
