@@ -26,7 +26,7 @@ const SENSOR_COLLECTION = "sensores";
 
 app.post("/medicion", async (req, res) => {
   try {
-    const { sensorId, valor } = req.body;
+    const { sensorId, valor , movimiento} = req.body;
     const docRef = await db.collection(SENSOR_COLLECTION).add({
       sensorId,
       valor,
