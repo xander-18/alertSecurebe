@@ -1,4 +1,5 @@
-import { Settings, Activity, User, X, History } from "lucide-react"
+import { Settings, Activity, User, X, History } from "lucide-react";
+import { NavLink } from "react-router-dom";
 
 const Sidebar = ({ isOpen, onClose }) => {
   return (
@@ -8,7 +9,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       <aside className={`sidebar ${isOpen ? "open" : ""}`}>
         <div className="sidebar-header">
           <div className="sidebar-logo">
-            <X className="icon-lg" />
+            <Activity className="icon-lg" />
             <span>XALERT</span>
           </div>
           <button onClick={onClose} className="sidebar-close" aria-label="Cerrar menú">
@@ -17,20 +18,32 @@ const Sidebar = ({ isOpen, onClose }) => {
         </div>
 
         <nav className="sidebar-nav">
-          <a href="#" className="sidebar-link active">
+          <NavLink 
+            to="/" 
+            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+            onClick={onClose}
+          >
             <Activity className="icon" />
             <span>Monitoreo</span>
-          </a>
+          </NavLink>
 
-          <a href="#" className="sidebar-link">
+          <NavLink 
+            to="/history" 
+            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+            onClick={onClose}
+          >
             <History className="icon" />
             <span>Historial</span>
-          </a>
+          </NavLink>
 
-          <a href="#" className="sidebar-link">
+          <NavLink 
+            to="/settings" 
+            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+            onClick={onClose}
+          >
             <Settings className="icon" />
             <span>Configuración</span>
-          </a>
+          </NavLink>
         </nav>
 
         <div className="sidebar-footer">
@@ -46,7 +59,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         </div>
       </aside>
     </>
-  )
-}
+  );
+};
 
-export default Sidebar
+export default Sidebar;
