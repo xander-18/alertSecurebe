@@ -14,7 +14,7 @@ const Header = ({ onMenuClick }) => {
         </div>
         <input
           type="text"
-          placeholder="Buscar APIs..."
+          placeholder="Buscar..."
         />
       </div>
       
