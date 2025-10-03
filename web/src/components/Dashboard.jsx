@@ -1,41 +1,69 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ShieldAlert, Activity, Clock, Filter, AlertTriangle, CheckCircle2, Camera, TrendingUp } from "lucide-react"
+import { ShieldAlert, Activity, Clock, Filter, AlertTriangle, CheckCircle2, Camera, TrendingUp, X } from "lucide-react"
+// import "./dashboard.css"
 import "../assets/style/dashboard.css"
+
 export default function Dashboard() {
   const [sensorData, setSensorData] = useState(null)
   const [filterStatus, setFilterStatus] = useState("all")
   const [historicalData, setHistoricalData] = useState([])
+  const [showFloatingAlert, setShowFloatingAlert] = useState(false)
+  const [floatingAlertData, setFloatingAlertData] = useState(null)
 
   useEffect(() => {
-    const fetchLastSensorData = async () => {
-      try {
-        const sensorId = "PIR-001"
-        const response = await fetch(`https://alertsecurebe.onrender.com/ultima/${sensorId}`)
+  const fetchLastSensorData = async () => {
+    try {
+      const sensorId = "PIR-001"
+      const response = await fetch(`https://alertsecurebe.onrender.com/ultima/${sensorId}`)
 
-        if (!response.ok) {
-          throw new Error("La respuesta de la red no fue correcta")
-        }
-
-        const data = await response.json()
-
-        if (data.msg === "Sin datos") {
-          console.log("No se encontraron datos para este sensor.")
-          return
-        }
-
-        setSensorData(data)
-        setHistoricalData((prev) => [data, ...prev].slice(0, 10))
-      } catch (error) {
-        console.error("Error al obtener los últimos datos del sensor:", error)
+      if (!response.ok) {
+        throw new Error("La respuesta de la red no fue correcta")
       }
-    }
 
-    fetchLastSensorData()
-    const intervalId = setInterval(fetchLastSensorData, 10000)
-    return () => clearInterval(intervalId)
-  }, [])
+      const data = await response.json()
+
+      if (data.msg === "Sin datos") {
+        console.log("No se encontraron datos para este sensor.")
+        return
+      }
+
+      setSensorData((prevSensorData) => {
+        const isNewMovement = data.valor === 1 && (!prevSensorData || prevSensorData.fecha._seconds !== data.fecha._seconds)
+
+        if (isNewMovement) {
+          setFloatingAlertData(data)
+          setShowFloatingAlert(true)
+
+          setTimeout(() => {
+            setShowFloatingAlert(false)
+          }, 10000)
+        }
+
+        return data
+      })
+
+      setHistoricalData((prev) => {
+        if (prev.length > 0 && prev[0].fecha._seconds === data.fecha._seconds) {
+          return prev
+        }
+        return [data, ...prev].slice(0, 10)
+      })
+
+    } catch (error) {
+      console.error("Error al obtener los últimos datos del sensor:", error)
+    }
+  }
+
+  fetchLastSensorData()
+  const intervalId = setInterval(fetchLastSensorData, 10000)
+  return () => clearInterval(intervalId)
+}, []) 
+
+  const closeFloatingAlert = () => {
+    setShowFloatingAlert(false)
+  }
 
   const getStatusColor = (valor) => {
     return valor === 1 ? "status-alert" : "status-normal"
@@ -72,6 +100,59 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-container">
+      {showFloatingAlert && floatingAlertData && (
+        <>
+          <div className="modal-backdrop" onClick={closeFloatingAlert}></div>
+          <div className="floating-alert-modal">
+            <button className="modal-close-btn" onClick={closeFloatingAlert}>
+              <X className="icon-md" />
+            </button>
+
+            <div className="modal-icon-container">
+              <div className="modal-icon-pulse"></div>
+              <AlertTriangle className="modal-icon" />
+            </div>
+
+            <h2 className="modal-title">¡ALERTA DE SEGURIDAD!</h2>
+            <p className="modal-subtitle">Movimiento Detectado</p>
+
+            <div className="modal-message">
+              <p>{floatingAlertData.movimiento}</p>
+            </div>
+
+            <div className="modal-details">
+              <div className="modal-detail-item">
+                <Camera className="icon-sm" />
+                <div>
+                  <span className="modal-detail-label">Sensor</span>
+                  <span className="modal-detail-value">{floatingAlertData.sensorId}</span>
+                </div>
+              </div>
+
+              <div className="modal-detail-item">
+                <Clock className="icon-sm" />
+                <div>
+                  <span className="modal-detail-label">Hora</span>
+                  <span className="modal-detail-value">{formatTime(floatingAlertData.fecha._seconds)}</span>
+                </div>
+              </div>
+
+              <div className="modal-detail-item">
+                <Activity className="icon-sm" />
+                <div>
+                  <span className="modal-detail-label">Fecha</span>
+                  <span className="modal-detail-value">{formatDate(floatingAlertData.fecha._seconds)}</span>
+                </div>
+              </div>
+            </div>
+
+            <button className="modal-action-btn" onClick={closeFloatingAlert}>
+              Entendido
+            </button>
+          </div>
+        </>
+      )}
+
       <header className="dashboard-header">
         <div className="header-content">
           <div className="header-title-section">
