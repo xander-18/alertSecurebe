@@ -1,4 +1,4 @@
-import { Settings, Activity, User, X, History } from "lucide-react";
+import { Settings, Activity, User, X, History, AlarmCheck, Satellite } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -34,6 +34,15 @@ const Sidebar = ({ isOpen, onClose }) => {
           >
             <History className="icon" />
             <span>Historial</span>
+          </NavLink>
+
+          <NavLink 
+            to="/sensores" 
+            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+            onClick={onClose}
+          >
+            <Satellite className="icon" />
+            <span>Sensores</span>
           </NavLink>
 
           <NavLink 

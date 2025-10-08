@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
 import History from './view/history/History';
+import Sensores from './view/sensor/Sensores';
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -17,6 +18,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/history" element={<History />} />
+            <Route path="/sensores" element={<Sensores />} />
           </Routes>
         </div>
       </div>
