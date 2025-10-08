@@ -23,6 +23,7 @@ initializeApp({
 
 const db = getFirestore();
 const SENSOR_COLLECTION = "sensores";
+const MEDICION_COLLECTION = "mediciones"; 
 
 app.get("/sensor", async (req, res) => {
   try {
@@ -54,15 +55,36 @@ app.post("/store/sensor", async (req, res) => {
   }
 });
 
+app.delete("/sensor/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.collection(SENSOR_COLLECTION).doc(id).delete();
+    res.json({ status: "ok", message: "Sensor eliminado correctamente" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post("/medicion", async (req, res) => {
   try {
-    const { sensorId, valor , movimiento} = req.body;
-    const docRef = await db.collection(SENSOR_COLLECTION).add({
+    const { sensorId, valor, movimiento } = req.body;
+    
+    if (!sensorId) {
+      return res.status(400).json({ error: "sensorId es requerido" });
+    }
+    
+    const docRef = await db.collection(MEDICION_COLLECTION).add({
       sensorId,
-      valor,
-      movimiento,
+      valor: valor || 0,
+      movimiento: movimiento || "",
       fecha: new Date(),
     });
+    
+    // Actualizar lastActivity del sensor
+    await db.collection(SENSOR_COLLECTION).doc(sensorId).update({
+      lastActivity: new Date().toISOString().slice(0, 19).replace("T", " "),
+    });
+    
     res.json({ id: docRef.id, status: "ok" });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -73,13 +95,15 @@ app.get("/ultima/:sensorId", async (req, res) => {
   try {
     const { sensorId } = req.params;
     const snapshot = await db
-      .collection(SENSOR_COLLECTION)
+      .collection(MEDICION_COLLECTION)
       .where("sensorId", "==", sensorId)
       .orderBy("fecha", "desc")
       .limit(1)
       .get();
 
-    if (snapshot.empty) return res.json({ msg: "Sin datos" });
+    if (snapshot.empty) {
+      return res.json({ msg: "Sin datos" });
+    }
 
     const data = snapshot.docs[0].data();
     res.json(data);
@@ -92,13 +116,35 @@ app.get("/historico/:sensorId", async (req, res) => {
   try {
     const { sensorId } = req.params;
     const snapshot = await db
-      .collection(SENSOR_COLLECTION)
+      .collection(MEDICION_COLLECTION)
       .where("sensorId", "==", sensorId)
       .orderBy("fecha", "asc")
       .get();
 
-    const data = snapshot.docs.map((doc) => doc.data());
+    const data = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    
     res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+app.get("/mediciones", async (req, res) => {
+  try {
+    const snapshot = await db
+      .collection(MEDICION_COLLECTION)
+      .orderBy("fecha", "desc")
+      .limit(100)
+      .get();
+
+    const mediciones = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    
+    res.json(mediciones);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

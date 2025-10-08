@@ -1,26 +1,11 @@
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { Plus, Edit2, Trash2, RefreshCw, X, Activity } from 'lucide-react'
+import { fetchAPI, notificationSwal, confirmSwal, API_URL_SENSORES, API_URL_STORE_SENSOR } from "../../common/common"
 import "./sensores.css"
-const Sensores = () => {
-  const [sensors, setSensors] = useState([
-    {
-      id: "PIR-001",
-      name: "Sensor Entrada Principal",
-      type: "PIR",
-      location: "Entrada Principal",
-      status: "active",
-      lastActivity: "2025-10-03 11:32:42",
-    },
-    {
-      id: "PIR-002",
-      name: "Sensor Pasillo",
-      type: "PIR",
-      location: "Pasillo Central",
-      status: "inactive",
-      lastActivity: "2025-10-02 08:15:30",
-    },
-  ])
 
+const Sensores = () => {
+  const [sensors, setSensors] = useState([])
+  const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingSensor, setEditingSensor] = useState(null)
   const [formData, setFormData] = useState({
@@ -30,6 +15,25 @@ const Sensores = () => {
     location: "",
     status: "active",
   })
+
+  // Cargar sensores al montar el componente
+  useEffect(() => {
+    fetchSensors()
+  }, [])
+
+  const fetchSensors = async () => {
+    try {
+      setLoading(true)
+      const data = await fetchAPI(API_URL_SENSORES, 'GET')
+          console.log("Sensores recibidos:", data) // <-- Agrega esto
+      setSensors(data || [])
+    } catch (error) {
+      console.error("Error:", error)
+      setSensors([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const activeSensors = sensors.filter((s) => s.status === "active").length
   const inactiveSensors = sensors.filter((s) => s.status === "inactive").length
@@ -61,46 +65,90 @@ const Sensores = () => {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (editingSensor) {
-      setSensors((prev) =>
-        prev.map((s) =>
-          s.id === editingSensor.id
-            ? { ...formData, lastActivity: new Date().toISOString().slice(0, 19).replace("T", " ") }
-            : s,
-        ),
-      )
-    } else {
-      setSensors((prev) => [
-        ...prev,
-        {
-          ...formData,
-          lastActivity: new Date().toISOString().slice(0, 19).replace("T", " "),
-        },
-      ])
-    }
+    try {
+      const sensorData = {
+        ...formData,
+        lastActivity: new Date().toISOString().slice(0, 19).replace("T", " "),
+      }
 
-    handleCloseDialog()
+      const result = await fetchAPI(API_URL_STORE_SENSOR, 'POST', sensorData)
+      
+      if (result.status === "ok") {
+        notificationSwal(
+          'success', 
+          editingSensor ? 'Sensor actualizado correctamente' : 'Sensor creado correctamente'
+        )
+        handleCloseDialog()
+        fetchSensors()
+      }
+    } catch (error) {
+      console.error("Error:", error)
+    }
   }
 
   const handleDelete = (sensorId) => {
-    if (window.confirm("¿Estás seguro de que deseas eliminar este sensor?")) {
-      setSensors((prev) => prev.filter((s) => s.id !== sensorId))
-    }
+    confirmSwal(
+      '¿Estás seguro?',
+      'Esta acción eliminará el sensor solo localmente.',
+      () => {
+        setSensors((prev) => prev.filter((s) => s.id !== sensorId))
+        notificationSwal('success', 'Sensor eliminado')
+      }
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="sensors-container">
+        <div style={{ textAlign: "center", padding: "2rem", color: "#94a3b8" }}>
+          <RefreshCw className="animate-spin mx-auto mb-2" size={32} />
+          <p>Cargando sensores...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="sensors-container">
       <div className="sensors-header">
-        <div>
-          <h1 className="sensors-title">Gestión de Sensores</h1>
-          <p className="sensors-subtitle">Administra todos los sensores del sistema</p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="sensors-title">Gestión de Sensores</h1>
+            <p className="sensors-subtitle">Administra todos los sensores del sistema</p>
+          </div>
         </div>
-        <button className="btn-primary" onClick={() => handleOpenDialog()}>
-          + Nuevo Sensor
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            className="btn-primary" 
+            onClick={() => handleOpenDialog()}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+          >
+            <Plus size={18} />
+            Nuevo Sensor
+          </button>
+          <button 
+            className="btn-secondary" 
+            onClick={fetchSensors}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.5rem',
+              background: 'rgba(51, 65, 85, 0.8)',
+              border: '1px solid rgba(71, 85, 105, 0.5)',
+              padding: '0.5rem 1rem',
+              borderRadius: '0.5rem',
+              color: '#cbd5e1',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => e.target.style.background = 'rgba(71, 85, 105, 0.8)'}
+            onMouseLeave={(e) => e.target.style.background = 'rgba(51, 65, 85, 0.8)'}
+          >
+          </button>
+        </div>
       </div>
 
       <div className="stats-grid">
@@ -159,53 +207,54 @@ const Sensores = () => {
               </tr>
             </thead>
             <tbody>
-              {sensors.map((sensor) => (
-                <tr key={sensor.id}>
-                  <td className="sensor-id">{sensor.id}</td>
-                  <td>{sensor.name}</td>
-                  <td>
-                    <span className="sensor-type-badge">{sensor.type}</span>
-                  </td>
-                  <td>{sensor.location}</td>
-                  <td>
-                    <span
-                      className={`status-badge ${sensor.status === "active" ? "status-active" : "status-inactive"}`}
-                    >
-                      {sensor.status === "active" ? "Activo" : "Inactivo"}
-                    </span>
-                  </td>
-                  <td className="last-activity">{sensor.lastActivity}</td>
-                  <td>
-                    <div className="action-buttons">
-                      <button className="btn-edit" onClick={() => handleOpenDialog(sensor)} title="Editar">
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                      </button>
-                      <button className="btn-delete" onClick={() => handleDelete(sensor.id)} title="Eliminar">
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        </svg>
-                      </button>
-                    </div>
+              {sensors.length === 0 ? (
+                <tr>
+                  <td colSpan="7" style={{ textAlign: "center", padding: "2rem", color: "#94a3b8" }}>
+                    No hay sensores registrados
                   </td>
                 </tr>
-              ))}
+              ) : (
+                sensors
+                  .filter((sensor) => sensor.id && sensor.name)
+                  .map((sensor) => (
+                    <tr key={sensor.id}>
+                      <td className="sensor-id">{sensor.id}</td>
+                      <td>{sensor.name}</td>
+                      <td>
+                        <span className="sensor-type-badge">{sensor.type}</span>
+                      </td>
+                      <td>{sensor.location}</td>
+                      <td>
+                        <span
+                          className={`status-badge ${sensor.status === "active" ? "status-active" : "status-inactive"}`}
+                        >
+                          {sensor.status === "active" ? "Activo" : "Inactivo"}
+                        </span>
+                      </td>
+                      <td className="last-activity">{sensor.lastActivity || "N/A"}</td>
+                      <td>
+                        <div className="action-buttons">
+                          <button 
+                            className="btn-edit" 
+                            onClick={() => handleOpenDialog(sensor)} 
+                            title="Editar"
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button 
+                            className="btn-delete" 
+                            onClick={() => handleDelete(sensor.id)} 
+                            title="Eliminar"
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+              )}
             </tbody>
           </table>
         </div>
@@ -215,91 +264,117 @@ const Sensores = () => {
         <div className="dialog-overlay" onClick={handleCloseDialog}>
           <div className="dialog-content" onClick={(e) => e.stopPropagation()}>
             <div className="dialog-header">
-              <h2>{editingSensor ? "Editar Sensor" : "Nuevo Sensor"}</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ 
+                  padding: '0.5rem', 
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  borderRadius: '0.5rem'
+                }}>
+                  {editingSensor ? <Edit2 size={20} color="white" /> : <Plus size={20} color="white" />}
+                </div>
+                <h2>{editingSensor ? "Editar Sensor" : "Nuevo Sensor"}</h2>
+              </div>
               <button className="dialog-close" onClick={handleCloseDialog}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
+                <X size={24} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label htmlFor="id">ID del Sensor</label>
-                <input
-                  type="text"
-                  id="id"
-                  name="id"
-                  value={formData.id}
-                  onChange={handleInputChange}
-                  placeholder="PIR-003"
-                  required
-                  disabled={editingSensor !== null}
-                  className="form-input"
-                />
-              </div>
+            <div style={{ padding: '1.5rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div className="form-group">
+                  <label htmlFor="id">ID del Sensor *</label>
+                  <input
+                    type="text"
+                    id="id"
+                    name="id"
+                    value={formData.id}
+                    onChange={handleInputChange}
+                    placeholder="PIR-003"
+                    required
+                    disabled={editingSensor !== null}
+                    className="form-input"
+                  />
+                </div>
 
-              <div className="form-group">
-                <label htmlFor="name">Nombre</label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="Sensor Jardín Trasero"
-                  required
-                  className="form-input"
-                />
-              </div>
+                <div className="form-group">
+                  <label htmlFor="name">Nombre *</label>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    placeholder="Sensor Jardín Trasero"
+                    required
+                    className="form-input"
+                  />
+                </div>
 
-              <div className="form-group">
-                <label htmlFor="type">Tipo</label>
-                <select id="type" name="type" value={formData.type} onChange={handleInputChange} className="form-input">
-                  <option value="PIR">PIR</option>
-                  <option value="Ultrasónico">Ultrasónico</option>
-                  <option value="Magnético">Magnético</option>
-                  <option value="Infrarrojo">Infrarrojo</option>
-                </select>
-              </div>
+                <div className="form-group">
+                  <label htmlFor="type">Tipo *</label>
+                  <select 
+                    id="type" 
+                    name="type" 
+                    value={formData.type} 
+                    onChange={handleInputChange} 
+                    className="form-input"
+                  >
+                    <option value="PIR">PIR</option>
+                    <option value="Ultrasónico">Ultrasónico</option>
+                    <option value="Magnético">Magnético</option>
+                    <option value="Infrarrojo">Infrarrojo</option>
+                  </select>
+                </div>
 
-              <div className="form-group">
-                <label htmlFor="location">Ubicación</label>
-                <input
-                  type="text"
-                  id="location"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  placeholder="Jardín Trasero"
-                  required
-                  className="form-input"
-                />
-              </div>
+                <div className="form-group">
+                  <label htmlFor="location">Ubicación *</label>
+                  <input
+                    type="text"
+                    id="location"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleInputChange}
+                    placeholder="Jardín Trasero"
+                    required
+                    className="form-input"
+                  />
+                </div>
 
-              <div className="form-group">
-                <label htmlFor="status">Estado</label>
-                <select
-                  id="status"
-                  name="status"
-                  value={formData.status}
-                  onChange={handleInputChange}
-                  className="form-input"
-                >
-                  <option value="active">Activo</option>
-                  <option value="inactive">Inactivo</option>
-                </select>
-              </div>
+                <div className="form-group">
+                  <label htmlFor="status">Estado *</label>
+                  <select
+                    id="status"
+                    name="status"
+                    value={formData.status}
+                    onChange={handleInputChange}
+                    className="form-input"
+                  >
+                    <option value="active">Activo</option>
+                    <option value="inactive">Inactivo</option>
+                  </select>
+                </div>
 
-              <div className="dialog-actions">
-                <button type="button" className="btn-cancel" onClick={handleCloseDialog}>
-                  Cancelar
-                </button>
-                <button type="submit" className="btn-submit">
-                  {editingSensor ? "Guardar Cambios" : "Crear Sensor"}
-                </button>
+                <div className="dialog-actions">
+                  <button 
+                    type="button" 
+                    className="btn-cancel" 
+                    onClick={handleCloseDialog}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}
+                  >
+                    <X size={18} />
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={handleSubmit} 
+                    className="btn-submit"
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}
+                  >
+                    {editingSensor ? <Edit2 size={18} /> : <Plus size={18} />}
+                    {editingSensor ? "Guardar Cambios" : "Crear Sensor"}
+                  </button>
+                </div>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
