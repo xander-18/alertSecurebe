@@ -24,6 +24,36 @@ initializeApp({
 const db = getFirestore();
 const SENSOR_COLLECTION = "sensores";
 
+app.get("/sensor", async (req, res) => {
+  try {
+    const snapshot = await db.collection(SENSOR_COLLECTION).get();
+    const sensors = snapshot.docs.map((doc) => doc.data());
+    res.json(sensors);
+  } catch (err) {
+    res.status(500).json({ error: err.message }); // ✅ Corregido
+  }
+})
+
+app.post("/store/sensor", async (req, res) => {
+  try {
+    const { id, name, type, location, status, lastActivity } = req.body;
+    if (!id || !name || !type || !location || !status) {
+      return res.status(400).json({ error: "Faltan campos requeridos" });
+    }
+    await db.collection(SENSOR_COLLECTION).doc(id).set({
+      id,
+      name,
+      type,
+      location,
+      status,
+      lastActivity: lastActivity || new Date().toISOString(),
+    });
+    res.json({ status: "ok" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post("/medicion", async (req, res) => {
   try {
     const { sensorId, valor , movimiento} = req.body;
