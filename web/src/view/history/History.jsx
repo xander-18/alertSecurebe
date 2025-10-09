@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { Clock, TrendingUp, AlertTriangle, CheckCircle, Calendar, RefreshCw } from 'lucide-react'
+import { fetchAPI, notificationSwal, API_URL_HISTORICO } from "../../common/common"
 import "./history.css"
 
 const History = () => {
@@ -11,35 +13,33 @@ const History = () => {
   const [showCustomPicker, setShowCustomPicker] = useState(false)
   const [stats, setStats] = useState({ total: 0, alerts: 0, normal: 0 })
   const [loading, setLoading] = useState(true)
+  const [selectedSensor, setSelectedSensor] = useState("PIR-001")
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [selectedSensor])
 
   useEffect(() => {
     applyFilter()
   }, [activeFilter, sensorData, customDateRange])
 
-  const fetchData = async () => {
+ const fetchData = async () => {
     try {
       setLoading(true)
-      const response = await fetch("https://alertsecurebe.onrender.com/historico/PIR-001")
-
-      if (!response.ok) {
-        throw new Error("Error al cargar datos")
-      }
-
-      const data = await response.json()
-
+      const data = await fetchAPI(API_URL_HISTORICO + selectedSensor, 'GET')
+      
       if (Array.isArray(data)) {
         setSensorData(data)
+      } else if (data && data.msg === "Sin datos") {
+        setSensorData([])
+        notificationSwal('info', 'Sin datos', `No hay mediciones para el sensor ${selectedSensor}`)
       } else if (data && typeof data === "object") {
         setSensorData([data])
       } else {
         setSensorData([])
       }
     } catch (error) {
-      console.error("Error fetching data:", error)
+      console.error("❌ Error al cargar datos:", error)
       setSensorData([])
     } finally {
       setLoading(false)
@@ -117,6 +117,9 @@ const History = () => {
     if (item.fecha?._seconds) {
       return new Date(item.fecha._seconds * 1000)
     }
+    if (item.fecha?.seconds) {
+      return new Date(item.fecha.seconds * 1000)
+    }
     return new Date(item.fecha)
   }
 
@@ -169,15 +172,38 @@ const History = () => {
       <div className="history-header">
         <div className="header-content">
           <div className="header-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <Clock size={24} />
           </div>
           <div>
             <h1 className="history-title">Historial de Eventos</h1>
             <p className="history-subtitle">Análisis temporal de detecciones</p>
           </div>
         </div>
+        <button 
+          onClick={fetchData}
+          className="refresh-button"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.5rem 1rem',
+            background: 'rgba(59, 130, 246, 0.1)',
+            border: '1px solid rgba(59, 130, 246, 0.3)',
+            borderRadius: '0.5rem',
+            color: '#60a5fa',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.background = 'rgba(59, 130, 246, 0.2)'
+            e.target.style.transform = 'scale(1.05)'
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.background = 'rgba(59, 130, 246, 0.1)'
+            e.target.style.transform = 'scale(1)'
+          }}
+        >
+        </button>
       </div>
 
       <div className="filters-section">
@@ -225,6 +251,7 @@ const History = () => {
               setShowCustomPicker(!showCustomPicker)
             }}
           >
+            <Calendar size={16} />
             Personalizado
           </button>
         </div>
@@ -254,9 +281,7 @@ const History = () => {
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-icon blue">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
+            <TrendingUp size={20} />
           </div>
           <div className="stat-content">
             <div className="stat-label">Total Eventos</div>
@@ -266,9 +291,7 @@ const History = () => {
 
         <div className="stat-card">
           <div className="stat-icon red">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
+            <AlertTriangle size={20} />
           </div>
           <div className="stat-content">
             <div className="stat-label">Alertas</div>
@@ -278,9 +301,7 @@ const History = () => {
 
         <div className="stat-card">
           <div className="stat-icon green">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <CheckCircle size={20} />
           </div>
           <div className="stat-content">
             <div className="stat-label">Estado Normal</div>
@@ -324,23 +345,33 @@ const History = () => {
                 <path d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
               </svg>
               <p>No hay eventos en este período</p>
+              <button 
+                onClick={fetchData}
+                style={{
+                  marginTop: '1rem',
+                  padding: '0.5rem 1rem',
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  borderRadius: '0.5rem',
+                  color: '#60a5fa',
+                  cursor: 'pointer'
+                }}
+              >
+                Recargar datos
+              </button>
             </div>
           ) : (
             filteredData.map((event, index) => (
-              <div key={index} className={`event-item ${event.valor === 1 ? "alert" : "normal"}`}>
+              <div key={event.id || index} className={`event-item ${event.valor === 1 ? "alert" : "normal"}`}>
                 <div className="event-icon">
                   {event.valor === 1 ? (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
+                    <AlertTriangle size={20} />
                   ) : (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                    <CheckCircle size={20} />
                   )}
                 </div>
                 <div className="event-content">
-                  <div className="event-message">{event.movimiento}</div>
+                  <div className="event-message">{event.movimiento || "Sin descripción"}</div>
                   <div className="event-meta">
                     <span className="event-sensor">{event.sensorId}</span>
                     <span className="event-separator">•</span>

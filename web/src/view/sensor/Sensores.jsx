@@ -16,7 +16,6 @@ const Sensores = () => {
     status: "active",
   })
 
-  // Cargar sensores al montar el componente
   useEffect(() => {
     fetchSensors()
   }, [])
@@ -25,7 +24,6 @@ const Sensores = () => {
     try {
       setLoading(true)
       const data = await fetchAPI(API_URL_SENSORES, 'GET')
-          console.log("Sensores recibidos:", data) // <-- Agrega esto
       setSensors(data || [])
     } catch (error) {
       console.error("Error:", error)
