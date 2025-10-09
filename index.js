@@ -24,6 +24,8 @@ initializeApp({
 const db = getFirestore();
 const SENSOR_COLLECTION = "sensores";
 const MEDICION_COLLECTION = "mediciones"; 
+const USUARIO_COLLECTION = "usuarios";
+
 
 app.get("/sensor", async (req, res) => {
   try {
@@ -64,6 +66,95 @@ app.delete("/sensor/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+app.post("/register", async (req, res) => {
+  try {
+    const { email, password, nombre, rol } = req.body;
+    
+    if (!email || !password || !nombre) {
+      return res.status(400).json({ error: "Email, password y nombre son requeridos" });
+    }
+    
+    const userExists = await db.collection(USUARIO_COLLECTION).where("email", "==", email).get();
+    if (!userExists.empty) {
+      return res.status(400).json({ error: "El usuario ya existe" });
+    }
+    
+    const docRef = await db.collection(USUARIO_COLLECTION).add({
+      email,
+      password, 
+      nombre,
+      fechaRegistro: new Date(),
+    });
+    
+    res.json({ 
+      id: docRef.id, 
+      status: "ok",
+      message: "Usuario registrado correctamente" 
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email y password son requeridos" });
+    }
+    
+    const snapshot = await db.collection(USUARIO_COLLECTION)
+      .where("email", "==", email)
+      .limit(1)
+      .get();
+    
+    if (snapshot.empty) {
+      return res.status(401).json({ error: "Credenciales inválidas" });
+    }
+    
+    const userData = snapshot.docs[0].data();
+    const userId = snapshot.docs[0].id;
+    
+    if (userData.password !== password) {
+      return res.status(401).json({ error: "Credenciales inválidas" });
+    }
+    
+    // Login exitoso
+    res.json({
+      status: "ok",
+      message: "Login exitoso",
+      usuario: {
+        id: userId,
+        email: userData.email,
+        nombre: userData.nombre,
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint para obtener todos los usuarios (opcional)
+app.get("/usuarios", async (req, res) => {
+  try {
+    const snapshot = await db.collection(USUARIO_COLLECTION).get();
+    const usuarios = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      email: doc.data().email,
+      nombre: doc.data().nombre,
+      rol: doc.data().rol,
+      fechaRegistro: doc.data().fechaRegistro,
+      // No devolver la contraseña por seguridad
+    }));
+    res.json(usuarios);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 app.post("/medicion", async (req, res) => {
   try {
