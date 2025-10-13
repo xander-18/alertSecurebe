@@ -1,12 +1,12 @@
+// src/App.jsx
 import './App.css'
+import Dashboard from './components/Dashboard'
 
 function App() {
-
   return (
-    <>
-      <div>
-      </div>
-    </>
+    <div className="App">
+      <Dashboard />
+    </div>
   )
 }
 
