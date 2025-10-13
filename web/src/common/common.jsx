@@ -8,6 +8,9 @@ export const API_URL_STORE_SENSOR = API_URL + "store/sensor";
 export const API_URL_MEDICION = API_URL + "medicion";
 export const API_URL_ULTIMA = API_URL + "ultima/";
 export const API_URL_HISTORICO = API_URL + "historico/";
+export const API_URL_REGISTER = API_URL + "register/";
+export const API_URL_LOGIN = API_URL + "login/";
+export const API_URL_USERS = API_URL + "usuarios/";
 
 export function getSession(key) {
   const sessionData = localStorage.getItem(key);

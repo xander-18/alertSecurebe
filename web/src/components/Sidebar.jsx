@@ -1,7 +1,20 @@
-import { Settings, Activity, User, X, History, AlarmCheck, Satellite } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { Settings, Activity, User, X, History, Satellite, LogOut } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
 
 const Sidebar = ({ isOpen, onClose }) => {
+  const navigate = useNavigate();
+  const userName = localStorage.getItem('userName') || 'Usuario';
+  const userEmail = localStorage.getItem('userEmail') || 'usuario@xalert.com';
+
+  const handleLogout = () => {
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userRole');
+    navigate('/login');
+  };
+
   return (
     <>
       <div className={`sidebar-overlay ${isOpen ? "show" : ""}`} onClick={onClose} />
@@ -61,10 +74,14 @@ const Sidebar = ({ isOpen, onClose }) => {
               <User className="icon-md" />
             </div>
             <div className="sidebar-user-details">
-              <p className="sidebar-user-name">Usuario</p>
-              <p className="sidebar-user-email">usuario@xalert.com</p>
+              <p className="sidebar-user-name">{userName}</p>
+              <p className="sidebar-user-email">{userEmail}</p>
             </div>
           </div>
+          <button onClick={handleLogout} className="sidebar-logout">
+            <LogOut className="icon" />
+            <span>Cerrar sesión</span>
+          </button>
         </div>
       </aside>
     </>
