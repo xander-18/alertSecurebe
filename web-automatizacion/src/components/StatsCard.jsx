@@ -1,6 +1,7 @@
 import { TrendingUp } from 'lucide-react'
 
 export default function StatsCard({ title, value, change, Icon }) {
+  
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
       <div className="flex items-center justify-between mb-2">

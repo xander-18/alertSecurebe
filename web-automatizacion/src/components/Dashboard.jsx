@@ -1,7 +1,8 @@
 import { useState } from "react"
 import Sidebar from "./Sidebar"
 import Header from "./Header"
-import StatsCards from "./StatsCard"
+// import StatsCards from "./StatsCard"
+import StatsCards from "./StatsCards"
 import SalesAnalysis from "./SalesAnalysis"
 import RecentActivity from "./RecentActivity"
 
