@@ -25,6 +25,10 @@ const db = getFirestore();
 const SENSOR_COLLECTION = "sensores";
 const MEDICION_COLLECTION = "mediciones"; 
 const USUARIO_COLLECTION = "usuarios";
+const LEAD_COLLECTION = "leads";
+const CLIENTE_COLLECTION = "clientes";
+const DEPARTAMENTO_COLLECTION = "departamentos";
+const VENTA_COLLECTION = "ventas";
 
 
 app.get("/sensor", async (req, res) => {
@@ -155,6 +159,262 @@ app.get("/usuarios", async (req, res) => {
   }
 });
 
+app.get("/leads", async (req, res) => {
+  try {
+    const snapshot = await db.collection(LEAD_COLLECTION).orderBy("fecha_registro", "desc").get();
+    const leads = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    res.json(leads);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/leads", async (req, res) => {
+  try {
+    const { nombre, telefono, email, origen, estado, fuente, observaciones, usuario_id } = req.body;
+    
+    if (!nombre || !telefono || !email) {
+      return res.status(400).json({ error: "Nombre, teléfono y email son requeridos" });
+    }
+    
+    const docRef = await db.collection(LEAD_COLLECTION).add({
+      nombre,
+      telefono,
+      email,
+      origen: origen || "",
+      estado: estado || "nuevo",
+      fuente: fuente || "",
+      observaciones: observaciones || "",
+      usuario_id: usuario_id || null,
+      fecha_registro: new Date(),
+    });
+    
+    res.json({ id: docRef.id, status: "ok", message: "Lead creado correctamente" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/leads/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    await db.collection(LEAD_COLLECTION).doc(id).update(updateData);
+    res.json({ status: "ok", message: "Lead actualizado correctamente" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/leads/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.collection(LEAD_COLLECTION).doc(id).delete();
+    res.json({ status: "ok", message: "Lead eliminado correctamente" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==================== CLIENTES ====================
+app.get("/clientes", async (req, res) => {
+  try {
+    const snapshot = await db.collection(CLIENTE_COLLECTION).orderBy("created_at", "desc").get();
+    const clientes = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    res.json(clientes);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/clientes", async (req, res) => {
+  try {
+    const { dni, name, apellido, phone, email, estado_civil, presupuesto, profesion, 
+            fuente, fecha_naci, direccion, observacion, is_potential, estado_proceso, usuario_id } = req.body;
+    
+    if (!dni || !name || !email) {
+      return res.status(400).json({ error: "DNI, nombre y email son requeridos" });
+    }
+    
+    const docRef = await db.collection(CLIENTE_COLLECTION).add({
+      dni,
+      name,
+      apellido: apellido || "",
+      phone: phone || "",
+      email,
+      estado_civil: estado_civil || "",
+      presupuesto: presupuesto || "",
+      profesion: profesion || "",
+      fuente: fuente || "",
+      fecha_naci: fecha_naci || "",
+      direccion: direccion || "",
+      observacion: observacion || "",
+      is_potential: is_potential || false,
+      estado_proceso: estado_proceso || "prospecto",
+      usuario_id: usuario_id || null,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+    
+    res.json({ id: docRef.id, status: "ok", message: "Cliente creado correctamente" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/clientes/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = { ...req.body, updated_at: new Date() };
+    
+    await db.collection(CLIENTE_COLLECTION).doc(id).update(updateData);
+    res.json({ status: "ok", message: "Cliente actualizado correctamente" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/clientes/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.collection(CLIENTE_COLLECTION).doc(id).delete();
+    res.json({ status: "ok", message: "Cliente eliminado correctamente" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==================== DEPARTAMENTOS ====================
+app.get("/departamentos", async (req, res) => {
+  try {
+    const snapshot = await db.collection(DEPARTAMENTO_COLLECTION).orderBy("created_at", "desc").get();
+    const departamentos = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    res.json(departamentos);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/departamentos", async (req, res) => {
+  try {
+    const { precio, habitaciones, banos, area_m2, direccion, tipo, estado, descripcion } = req.body;
+    
+    if (!precio || !direccion || !tipo) {
+      return res.status(400).json({ error: "Precio, dirección y tipo son requeridos" });
+    }
+    
+    const docRef = await db.collection(DEPARTAMENTO_COLLECTION).add({
+      precio: parseFloat(precio),
+      habitaciones: parseInt(habitaciones) || 0,
+      banos: parseInt(banos) || 0,
+      area_m2: parseFloat(area_m2) || 0,
+      direccion,
+      tipo,
+      estado: estado || "disponible",
+      descripcion: descripcion || "",
+      fecha_publicacion: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+    
+    res.json({ id: docRef.id, status: "ok", message: "Departamento creado correctamente" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/departamentos/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = { ...req.body, updated_at: new Date() };
+    
+    await db.collection(DEPARTAMENTO_COLLECTION).doc(id).update(updateData);
+    res.json({ status: "ok", message: "Departamento actualizado correctamente" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/departamentos/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.collection(DEPARTAMENTO_COLLECTION).doc(id).delete();
+    res.json({ status: "ok", message: "Departamento eliminado correctamente" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==================== VENTAS ====================
+app.get("/ventas", async (req, res) => {
+  try {
+    const snapshot = await db.collection(VENTA_COLLECTION).orderBy("created_at", "desc").get();
+    const ventas = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    res.json(ventas);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/ventas", async (req, res) => {
+  try {
+    const { cliente_id, departamento_id, usuario_id, precio, fecha_venta, fecha_escritura,
+            estado_venta, metodo_pago, monto_inicial, plazo_meses, observaciones } = req.body;
+    
+    if (!cliente_id || !departamento_id || !precio) {
+      return res.status(400).json({ error: "Cliente, departamento y precio son requeridos" });
+    }
+    
+    const docRef = await db.collection(VENTA_COLLECTION).add({
+      cliente_id,
+      departamento_id,
+      usuario_id: usuario_id || null,
+      precio: parseFloat(precio),
+      fecha_venta: fecha_venta || new Date(),
+      fecha_escritura: fecha_escritura || null,
+      estado_venta: estado_venta || "reservado",
+      metodo_pago: metodo_pago || "contado",
+      monto_inicial: parseFloat(monto_inicial) || 0,
+      plazo_meses: parseInt(plazo_meses) || 0,
+      observaciones: observaciones || "",
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+    
+    // Actualizar estado del departamento a "vendido"
+    await db.collection(DEPARTAMENTO_COLLECTION).doc(departamento_id).update({
+      estado: "vendido",
+      updated_at: new Date(),
+    });
+    
+    res.json({ id: docRef.id, status: "ok", message: "Venta registrada correctamente" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/ventas/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = { ...req.body, updated_at: new Date() };
+    
+    await db.collection(VENTA_COLLECTION).doc(id).update(updateData);
+    res.json({ status: "ok", message: "Venta actualizada correctamente" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/ventas/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.collection(VENTA_COLLECTION).doc(id).delete();
+    res.json({ status: "ok", message: "Venta eliminada correctamente" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.post("/medicion", async (req, res) => {
   try {
