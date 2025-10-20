@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard'
 import Login from './views/auth/Login'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminLayout from './components/AdminLayout'
+import Usuarios from './views/usuarios/Usuarios'
 
 function App() {
   return (
@@ -21,6 +22,13 @@ function App() {
             </ProtectedRoute>
           }
         />
+          <Route path="/usuarios" element={
+          <ProtectedRoute>
+            <AdminLayout>
+              <Usuarios />
+            </AdminLayout>
+          </ProtectedRoute>
+        } />
       </Routes>
     </BrowserRouter>
   )

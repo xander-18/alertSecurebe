@@ -11,13 +11,22 @@ export const API_URL_CLIENTES = API_HOST + 'clientes';
 export const API_URL_DEPARTAMENTOS = API_HOST + 'departamentos';
 export const API_URL_VENTAS = API_HOST + 'ventas';
 
-export function getSession(key) {
-  const sessionData = localStorage.getItem(key);
-  if (sessionData) {
-    return JSON.parse(sessionData);
+// export function getSession(key) {
+//   const sessionData = localStorage.getItem(key);
+//   if (sessionData) {
+//     return JSON.parse(sessionData);
+//   }
+//   return null;
+// }
+export const getSession = (key) => {
+  const item = localStorage.getItem(key)
+  try {
+    return item ? JSON.parse(item) : null
+  } catch {
+    return null
   }
-  return null;
 }
+
 
 export function updateSession(key, value) {
   if (getSession(key)) {

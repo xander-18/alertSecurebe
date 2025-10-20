@@ -2,7 +2,7 @@
 import { Menu, Search, Bell, ChevronDown, LogOut, User, Settings } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getSession } from '../../common/common'
+import { deleteSession, getSession } from "../../common/common"
 
 export default function Header({ sidebarOpen, setSidebarOpen }) {
   const [user, setUser] = useState(null)

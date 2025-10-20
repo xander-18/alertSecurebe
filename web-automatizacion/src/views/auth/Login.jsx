@@ -42,11 +42,10 @@ export default function Login() {
       const result = await response.json()
 
       setFormData({ email: "", password: "" })
-
-      // Guardar datos del usuario en localStorage
-      localStorage.setItem('USER_ID', JSON.stringify(result.user.id))
-      localStorage.setItem('USER_NAME', JSON.stringify(result.user.name))
-      localStorage.setItem('USER_EMAIL', JSON.stringify(result.user.email))
+      console.log("Resultado del login:", result)
+      localStorage.setItem('USER_ID', JSON.stringify(result.id))
+      localStorage.setItem('USER_NAME', JSON.stringify(result.nombre))
+      localStorage.setItem('USER_EMAIL', JSON.stringify(result.email))
       localStorage.setItem('isAuthenticated', 'true')
 
       window.location.href = '/usuarios'
