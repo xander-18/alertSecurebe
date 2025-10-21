@@ -66,7 +66,7 @@ export async function editarSwal(api, id, updatedData, onSuccessCallback) {
   const receiptBase64 = updatedData.receipt ? await readFileAsBase64(updatedData.receipt) : null;
 
   const requestOptions = {
-    method: 'POST',
+    method: 'PUT',
     headers: {
       'Content-Type': 'application/json'
     },
@@ -99,6 +99,7 @@ export async function editarSwal(api, id, updatedData, onSuccessCallback) {
     notificationSwal('error', 'Error en la solicitud: ' + error.message);
   }
 }
+
 export function convertToQueryStringGET(jsonObject) {
   const queryString = Object.keys(jsonObject)
     .filter((key) => jsonObject[key] !== null && jsonObject[key] !== undefined)
@@ -126,28 +127,60 @@ export function jsonToFormData(datosEnviar) {
   return formdata;
 }
 
-export async function fetchAPIAsync(url, filter, method) {
+// export async function fetchAPIAsync(url, filter, method) {
+//   try {
+//     let urlApi = url;
+//     let requestOptions = {
+//       method: method,
+//        headers: {
+//         "Content-Type": "application/json", 
+//       },
+//       redirect: 'follow',
+//     };
+
+//     if (method === 'GET') {
+//       urlApi = urlApi + convertToQueryStringGET(filter);
+//     } else if (method === 'POST') {
+//       requestOptions.body = jsonToFormData(filter);
+//     }
+//     const response = await fetch(urlApi, requestOptions);
+//     if (!response.ok) {
+//       throw new Error(`Error en la solicitud: ${response.statusText}`);
+//     }
+
+//     const result = await response.json();
+//     return result;
+//   } catch (error) {
+//     notificationSwal('error', error);
+//     throw error;
+//   }
+// }
+export async function fetchAPIAsync(url, data, method = "POST") {
   try {
     let urlApi = url;
     let requestOptions = {
-      method: method,
-      redirect: 'follow',
+      method,
+      headers: {
+        "Content-Type": "application/json", // ✅ IMPORTANTE
+      },
+      redirect: "follow",
     };
 
-    if (method === 'GET') {
-      urlApi = urlApi + convertToQueryStringGET(filter);
-    } else if (method === 'POST') {
-      requestOptions.body = jsonToFormData(filter);
+    if (method === "GET") {
+      urlApi = urlApi + convertToQueryStringGET(data);
+    } else {
+      requestOptions.body = JSON.stringify(data); // ✅ Enviar como JSON
     }
+
     const response = await fetch(urlApi, requestOptions);
+
     if (!response.ok) {
       throw new Error(`Error en la solicitud: ${response.statusText}`);
     }
 
-    const result = await response.json();
-    return result;
+    return await response.json();
   } catch (error) {
-    notificationSwal('error', error);
+    notificationSwal("error", error);
     throw error;
   }
 }

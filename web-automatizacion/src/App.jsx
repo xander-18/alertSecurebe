@@ -5,6 +5,7 @@ import Login from './views/auth/Login'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminLayout from './components/AdminLayout'
 import Usuarios from './views/usuarios/Usuarios'
+import Clientes from './views/contact/Clientes'
 
 function App() {
   return (
@@ -26,6 +27,13 @@ function App() {
           <ProtectedRoute>
             <AdminLayout>
               <Usuarios />
+            </AdminLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/clientes" element={
+          <ProtectedRoute>
+            <AdminLayout>
+              <Clientes />
             </AdminLayout>
           </ProtectedRoute>
         } />
