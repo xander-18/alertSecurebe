@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import AdminLayout from './components/AdminLayout'
 import Usuarios from './views/usuarios/Usuarios'
 import Clientes from './views/contact/Clientes'
+import Departamentos from './views/departaments/Departamento'
 
 function App() {
   return (
@@ -34,6 +35,13 @@ function App() {
           <ProtectedRoute>
             <AdminLayout>
               <Clientes />
+            </AdminLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/departamentos" element={
+          <ProtectedRoute>
+            <AdminLayout>
+              <Departamentos />
             </AdminLayout>
           </ProtectedRoute>
         } />
