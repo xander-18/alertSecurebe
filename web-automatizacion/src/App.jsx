@@ -7,6 +7,7 @@ import AdminLayout from './components/AdminLayout'
 import Usuarios from './views/usuarios/Usuarios'
 import Clientes from './views/contact/Clientes'
 import Departamentos from './views/departaments/Departamento'
+import Ventas from './views/ventas/Ventas'
 
 function App() {
   return (
@@ -42,6 +43,13 @@ function App() {
           <ProtectedRoute>
             <AdminLayout>
               <Departamentos />
+            </AdminLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/ventas" element={
+          <ProtectedRoute>
+            <AdminLayout>
+              <Ventas />
             </AdminLayout>
           </ProtectedRoute>
         } />
