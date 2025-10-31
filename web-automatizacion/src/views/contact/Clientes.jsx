@@ -29,7 +29,7 @@ import TableRow from "@mui/material/TableRow"
 import Modal from "@mui/material/Modal"
 import { API_URL_CLIENTES, editarSwal, eliminarSwal, fetchAPIAsync, notificationSwal } from "../../../common/common"
 import { useParams } from "react-router"
-// API_URL_VERIFY_POTENTIAL
+
 const columns = [
   { id: "name", label: "Nombre", minWidth: 120, key: 1 },
   { id: "apellido", label: "Apellido", minWidth: 120, key: 2 },
@@ -102,6 +102,8 @@ const columns = [
         await fetchAPIAsync(API_URL_CLIENTES, itemSave, 'POST');
         notificationSwal('success', '¡Registro exitoso!');
         SearchFilter(page);
+        handleCloseModal1();
+        setItemSave({});
       } catch (e) {
         notificationSwal('error', e);
       }
