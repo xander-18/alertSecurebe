@@ -7,7 +7,7 @@ import History from './view/history/History';
 import Sensores from './view/sensor/Sensores';
 import Login from './view/auth/Login'
 import ProtectedRoute from './components/ProtectedRoute';
-import Configuración from './view/configuracion/config';
+import Configuración from './view/configuracion/Config.jsx'; 
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
