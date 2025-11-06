@@ -24,81 +24,98 @@ import TableHead from "@mui/material/TableHead"
 import TablePagination from "@mui/material/TablePagination"
 import TableRow from "@mui/material/TableRow"
 import Modal from "@mui/material/Modal"
-import { API_URL_DEPARTAMENTOS, eliminarSwal, notificationSwal } from "../../../common/common"
-// import { API_URL_DEPARTAMENTOS, editarSwal, eliminarSwal, fetchAPIAsync, notificationSwal } from "../../common/common"
+import { API_URL_DEPARTAMENTOS, editarSwal, fetchAPIAsync, notificationSwal } from "../../../common/common"
 
-const MOCK_DEPARTAMENTOS = [
-  {
-    id: 1,
-    nombre: "HUERTAS DEL VALLE",
-    direccion: "Santa Maria del Valle",
-    precio: "Agotado",
-    habitaciones: 1,
-    banos: 1,
-    area: "120m²",
-    tipo: "Lote",
-    estado: "Agotado",
-  },
-  {
-    id: 2,
-    nombre: "HIRAKI",
-    direccion: "La Colectora, Amarilis",
-    precio: 268000,
-    habitaciones: 3,
-    banos: 2,
-    area: "62m² - 84m²",
-    tipo: "Departamento",
-    estado: "En Construcción",
-  },
-  {
-    id: 3,
-    nombre: "HALIT",
-    direccion: "Los Portales, Amarilis",
-    precio: "Próximamente",
-    habitaciones: 3,
-    banos: 2,
-    area: "61.7m² - 94m²",
-    tipo: "Departamento",
-    estado: "Próximamente",
-  },
-]
+// Estas funciones deben estar en tu common.jsx
+// const API_HOST = "http://localhost:3000/api/"; // Ajusta según tu configuración
+// const API_URL_DEPARTAMENTOS = API_HOST + 'departamentos';
+
+// Funciones helper (deben estar en tu common.jsx)
+// const fetchAPIAsync = async (url, data, method = "GET") => {
+//   const options = {
+//     method,
+//     headers: {
+//       "Content-Type": "application/json",
+//     },
+//   };
+  
+//   if (method !== "GET" && data) {
+//     options.body = JSON.stringify(data);
+//   }
+  
+//   const response = await fetch(url, options);
+//   if (!response.ok) {
+//     throw new Error("Error en la petición");
+//   }
+//   return response.json();
+// };
+
+// const notificationSwal = (type, message) => {
+//   alert(`${type.toUpperCase()}: ${message}`);
+// };
+
+// const editarSwal = async (url, id, data, callback) => {
+//   try {
+//     await fetchAPIAsync(`${url}/${id}`, data, "POST");
+//     notificationSwal("success", "Actualizado exitosamente");
+//     callback();
+//   } catch (error) {
+//     notificationSwal("error", error.message);
+//   }
+// };
+
+// const eliminarSwal = async (id, url, callback) => {
+//   if (window.confirm("¿Estás seguro de que deseas eliminar este departamento?")) {
+//     try {
+//       await fetchAPIAsync(`${url}/${id}`, {}, "DELETE");
+//       callback();
+//     } catch (error) {
+//       notificationSwal("error", error.message);
+//     }
+//   }
+// };
 
 const columns = [
-  { id: "nombre", label: "Nombre", minWidth: 150, key: 1 },
-  { id: "direccion", label: "Dirección", minWidth: 180, key: 2 },
-  { id: "precio", label: "Precio", minWidth: 120, key: 3 },
-  { id: "habitaciones", label: "Habitaciones", minWidth: 100, key: 4 },
-  { id: "banos", label: "Baños", minWidth: 100, key: 5 },
-  { id: "area", label: "Área", minWidth: 100, key: 6 },
-  { id: "tipo", label: "Tipo", minWidth: 120, key: 7 },
-  { id: "estado", label: "Estado", minWidth: 120, key: 8 },
-  { id: "acciones", label: "Acciones", minWidth: 120, key: 9 },
+  { id: "direccion", label: "Dirección", minWidth: 180, key: 1 },
+  { id: "precio", label: "Precio", minWidth: 120, key: 2 },
+  { id: "habitaciones", label: "Habitaciones", minWidth: 100, key: 3 },
+  { id: "banos", label: "Baños", minWidth: 100, key: 4 },
+  { id: "area_m2", label: "Área", minWidth: 100, key: 5 },
+  { id: "tipo", label: "Tipo", minWidth: 120, key: 6 },
+  { id: "estado", label: "Estado", minWidth: 120, key: 7 },
+  { id: "acciones", label: "Acciones", minWidth: 120, key: 8 },
 ]
 
 export default function Departamentos() {
   const [busqueda, setBusqueda] = useState("")
   const [searchFilter, setSearchFilter] = useState({})
   const [rowsPerPage, setRowsPerPage] = useState(10)
-  const [filteredRows, setFilteredRows] = useState(MOCK_DEPARTAMENTOS)
-  const [totalItems, setTotalItems] = useState(MOCK_DEPARTAMENTOS.length)
+  const [filteredRows, setFilteredRows] = useState([])
+  const [totalItems, setTotalItems] = useState(0)
   const [page, setPage] = useState(0)
   const [itemSave, setItemSave] = useState({})
   const [editedItem, setEditedItem] = useState({})
   const [openModal1, setOpenModal1] = useState(false)
   const [openModal2, setOpenModal2] = useState(false)
-  const [allDepartamentos, setAllDepartamentos] = useState(MOCK_DEPARTAMENTOS)
 
   useEffect(() => {
     SearchFilter()
   }, [])
 
   async function SearchFilter(numPage) {
-    const currentPage = numPage !== undefined && numPage !== null ? numPage : page
-    const startIndex = currentPage * rowsPerPage
-    const endIndex = startIndex + rowsPerPage
-
-    setFilteredRows(allDepartamentos.slice(startIndex, endIndex))
-    setTotalItems(allDepartamentos.length)
+    const filter = searchFilter
+    filter.page = numPage + 1
+    filter.paginate = rowsPerPage
+    if (numPage === undefined || numPage === null) {
+      filter.page = page + 1
+    }
+    try {
+      const result = await fetchAPIAsync(API_URL_DEPARTAMENTOS, filter, "GET")
+      setFilteredRows(result)
+      setTotalItems(result.length)
+    } catch (error) {
+      notificationSwal("error", error.message)
+    }
   }
 
   const handleChangeRowsPerPage = (event) => {
@@ -107,38 +124,34 @@ export default function Departamentos() {
   }
 
   async function SaveItem() {
-    const newId = Math.max(...allDepartamentos.map((d) => d.id), 0) + 1
-    const newDepartamento = {
-      ...itemSave,
-      id: newId,
+    try {
+      await fetchAPIAsync(API_URL_DEPARTAMENTOS, itemSave, 'POST')
+      notificationSwal('success', '¡Departamento registrado exitosamente!')
+      SearchFilter(page)
+      handleCloseModal1()
+      setItemSave({})
+    } catch (e) {
+      notificationSwal('error', e.message)
     }
-
-    const updatedDepartamentos = [...allDepartamentos, newDepartamento]
-    setAllDepartamentos(updatedDepartamentos)
-    alert("¡Departamento registrado exitosamente!")
-    SearchFilter(page)
-    handleCloseModal1()
   }
 
   async function updateItem() {
-    const updatedDepartamentos = allDepartamentos.map((dept) => (dept.id === editedItem.id ? editedItem : dept))
-    setAllDepartamentos(updatedDepartamentos)
-    alert("¡Departamento actualizado exitosamente!")
-    SearchFilter(page)
+    const elementoId = editedItem.id
+    editarSwal(API_URL_DEPARTAMENTOS, elementoId, editedItem, () => SearchFilter(page))
     handleCloseModal2()
   }
 
   function handleEditar(row) {
     setEditedItem({
       id: row.id,
-      nombre: row.nombre,
-      direccion: row.direccion,
       precio: row.precio,
       habitaciones: row.habitaciones,
       banos: row.banos,
-      area: row.area,
+      area_m2: row.area_m2,
+      direccion: row.direccion,
       tipo: row.tipo,
       estado: row.estado,
+      descripcion: row.descripcion,
     })
     handleOpenModal2()
   }
@@ -180,23 +193,12 @@ export default function Departamentos() {
     setOpenModal2(false)
   }
 
-//   const handleDeleteDepartamento = (departamentoId) => {
-//     if (confirm("¿Estás seguro de que deseas eliminar este departamento?")) {
-//       const updatedDepartamentos = allDepartamentos.filter((dept) => dept.id !== departamentoId)
-//       setAllDepartamentos(updatedDepartamentos)
-//       alert("Departamento eliminado exitosamente")
-//       SearchFilter(page)
-//     }
-//   }
   const handleDeleteDepartamento = (departamentoId) => {
-  eliminarSwal(departamentoId, API_URL_DEPARTAMENTOS, () => {
-    notificationSwal("success", "Departamento eliminado exitosamente");
-    const updatedDepartamentos = allDepartamentos.filter((dept) => dept.id !== departamentoId);
-    setAllDepartamentos(updatedDepartamentos);
-    SearchFilter(page);
-  });
-};
-
+    eliminarSwal(departamentoId, API_URL_DEPARTAMENTOS, () => {
+      notificationSwal("success", "Departamento eliminado exitosamente")
+      SearchFilter(page)
+    })
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 p-4 lg:p-6">
@@ -224,7 +226,7 @@ export default function Departamentos() {
               </button>
 
               <button
-                onClick={SearchFilter}
+                onClick={() => SearchFilter(page)}
                 className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-800 disabled:cursor-not-allowed text-slate-300 px-4 py-2 rounded-md transition-colors"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -243,7 +245,7 @@ export default function Departamentos() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                 <input
-                  placeholder="Buscar por nombre, dirección o estado..."
+                  placeholder="Buscar por dirección, tipo o estado..."
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}
                   className="pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-md text-slate-300 placeholder-slate-400 focus:border-blue-400 focus:outline-none transition-colors w-full sm:w-80"
@@ -270,33 +272,28 @@ export default function Departamentos() {
                       return (
                         <TableRow hover role="checkbox" tabIndex={-1} key={row.id}>
                           {columns.map((column) => {
-                            if (column.id === "nombre") {
+                            if (column.id === "precio") {
                               return (
                                 <TableCell key={column.id}>
-                                  <span className="font-semibold text-blue-400">{row.nombre}</span>
+                                  S/{Number(row.precio).toLocaleString()}
                                 </TableCell>
                               )
                             }
-                            if (column.id === "precio") {
-                              const precioDisplay =
-                                typeof row.precio === "number" ? `S/${Number(row.precio).toLocaleString()}` : row.precio
-                              return <TableCell key={column.id}>{precioDisplay}</TableCell>
-                            }
-                            if (column.id === "area") {
-                              return <TableCell key={column.id}>{row.area}</TableCell>
+                            if (column.id === "area_m2") {
+                              return <TableCell key={column.id}>{row.area_m2}m²</TableCell>
                             }
                             if (column.id === "estado") {
                               return (
                                 <TableCell key={column.id}>
                                   <span
                                     className={`px-3 py-1 text-white text-sm rounded-md ${
-                                      row.estado === "Disponible"
+                                      row.estado === "disponible"
                                         ? "bg-green-600"
-                                        : row.estado === "Vendido" || row.estado === "Agotado"
+                                        : row.estado === "vendido" || row.estado === "agotado"
                                           ? "bg-red-600"
-                                          : row.estado === "Reservado"
+                                          : row.estado === "reservado"
                                             ? "bg-yellow-600"
-                                            : row.estado === "En Construcción"
+                                            : row.estado === "construccion"
                                               ? "bg-blue-600"
                                               : "bg-gray-600"
                                     }`}
@@ -385,30 +382,6 @@ export default function Departamentos() {
               {/* Modal Body */}
               <div className="p-6">
                 <form encType="multipart/form-data" className="space-y-8">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 pb-2 border-b border-slate-700">
-                      <Home className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-lg font-semibold text-white">Información General</h3>
-                    </div>
-                    <div className="space-y-2">
-                      <label htmlFor="nombre" className="block text-sm font-medium text-slate-300">
-                        Nombre del Proyecto *
-                      </label>
-                      <div className="relative">
-                        <Home className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-                        <input
-                          type="text"
-                          className="w-full pl-10 pr-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-slate-300 placeholder-slate-400 focus:border-blue-400 focus:outline-none transition-colors"
-                          name="nombre"
-                          id="nombre"
-                          placeholder="Ej: HIRAKI, HALIT, etc."
-                          onChange={handleSaveChange}
-                          value={itemSave.nombre || ""}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Información de Ubicación */}
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 pb-2 border-b border-slate-700">
@@ -448,11 +421,12 @@ export default function Departamentos() {
                         <div className="relative">
                           <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                           <input
-                            type="text"
+                            type="number"
+                            step="0.01"
                             className="w-full pl-10 pr-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-slate-300 placeholder-slate-400 focus:border-blue-400 focus:outline-none transition-colors"
                             name="precio"
                             id="precio"
-                            placeholder="Ej: 268000 o 'Próximamente'"
+                            placeholder="268000"
                             onChange={handleSaveChange}
                             value={itemSave.precio || ""}
                           />
@@ -460,26 +434,27 @@ export default function Departamentos() {
                       </div>
 
                       <div className="space-y-2">
-                        <label htmlFor="area" className="block text-sm font-medium text-slate-300">
-                          Área *
+                        <label htmlFor="area_m2" className="block text-sm font-medium text-slate-300">
+                          Área (m²) *
                         </label>
                         <div className="relative">
                           <Maximize className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                           <input
-                            type="text"
+                            type="number"
+                            step="0.01"
                             className="w-full pl-10 pr-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-slate-300 placeholder-slate-400 focus:border-blue-400 focus:outline-none transition-colors"
-                            name="area"
-                            id="area"
-                            placeholder="Ej: 62m² - 84m²"
+                            name="area_m2"
+                            id="area_m2"
+                            placeholder="62"
                             onChange={handleSaveChange}
-                            value={itemSave.area || ""}
+                            value={itemSave.area_m2 || ""}
                           />
                         </div>
                       </div>
 
                       <div className="space-y-2">
                         <label htmlFor="habitaciones" className="block text-sm font-medium text-slate-300">
-                          Habitaciones *
+                          Habitaciones
                         </label>
                         <div className="relative">
                           <Bed className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
@@ -488,7 +463,7 @@ export default function Departamentos() {
                             className="w-full pl-10 pr-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-slate-300 placeholder-slate-400 focus:border-blue-400 focus:outline-none transition-colors"
                             name="habitaciones"
                             id="habitaciones"
-                            placeholder="0"
+                            placeholder="3"
                             onChange={handleSaveChange}
                             value={itemSave.habitaciones || ""}
                           />
@@ -497,7 +472,7 @@ export default function Departamentos() {
 
                       <div className="space-y-2">
                         <label htmlFor="banos" className="block text-sm font-medium text-slate-300">
-                          Baños *
+                          Baños
                         </label>
                         <div className="relative">
                           <Bath className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
@@ -506,7 +481,7 @@ export default function Departamentos() {
                             className="w-full pl-10 pr-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-slate-300 focus:border-blue-400 focus:outline-none transition-colors"
                             name="banos"
                             id="banos"
-                            placeholder="0"
+                            placeholder="2"
                             onChange={handleSaveChange}
                             value={itemSave.banos || ""}
                           />
@@ -536,20 +511,20 @@ export default function Departamentos() {
                             value={itemSave.tipo || ""}
                           >
                             <option value="">Seleccionar tipo...</option>
-                            <option value="Departamento">Departamento</option>
-                            <option value="Casa">Casa</option>
-                            <option value="Lote">Lote</option>
-                            <option value="Penthouse">Penthouse</option>
-                            <option value="Estudio">Estudio</option>
-                            <option value="Loft">Loft</option>
-                            <option value="Dúplex">Dúplex</option>
+                            <option value="departamento">Departamento</option>
+                            <option value="casa">Casa</option>
+                            <option value="lote">Lote</option>
+                            <option value="penthouse">Penthouse</option>
+                            <option value="estudio">Estudio</option>
+                            <option value="loft">Loft</option>
+                            <option value="duplex">Dúplex</option>
                           </select>
                         </div>
                       </div>
 
                       <div className="space-y-2">
                         <label htmlFor="estado" className="block text-sm font-medium text-slate-300">
-                          Estado *
+                          Estado
                         </label>
                         <div className="relative">
                           <CheckCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
@@ -561,15 +536,37 @@ export default function Departamentos() {
                             value={itemSave.estado || ""}
                           >
                             <option value="">Seleccionar estado...</option>
-                            <option value="Disponible">Disponible</option>
-                            <option value="Reservado">Reservado</option>
-                            <option value="Vendido">Vendido</option>
-                            <option value="Agotado">Agotado</option>
-                            <option value="En Construcción">En Construcción</option>
-                            <option value="Próximamente">Próximamente</option>
+                            <option value="disponible">Disponible</option>
+                            <option value="reservado">Reservado</option>
+                            <option value="vendido">Vendido</option>
+                            <option value="agotado">Agotado</option>
+                            <option value="construccion">En Construcción</option>
+                            <option value="proximamente">Próximamente</option>
                           </select>
                         </div>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Descripción */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-700">
+                      <Home className="w-5 h-5 text-blue-400" />
+                      <h3 className="text-lg font-semibold text-white">Descripción</h3>
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="descripcion" className="block text-sm font-medium text-slate-300">
+                        Descripción del Departamento
+                      </label>
+                      <textarea
+                        className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-slate-300 placeholder-slate-400 focus:border-blue-400 focus:outline-none transition-colors resize-none"
+                        name="descripcion"
+                        id="descripcion"
+                        rows="4"
+                        placeholder="Detalles adicionales sobre el departamento..."
+                        onChange={handleSaveChange}
+                        value={itemSave.descripcion || ""}
+                      />
                     </div>
                   </div>
                 </form>
@@ -619,29 +616,6 @@ export default function Departamentos() {
 
               <div className="p-6">
                 <form className="space-y-8">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 pb-2 border-b border-slate-700">
-                      <Home className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-lg font-semibold text-white">Información General</h3>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium text-slate-300">Nombre del Proyecto *</label>
-                      <div className="relative">
-                        <Home className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-                        <input
-                          type="text"
-                          className="w-full pl-10 pr-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-slate-300 focus:border-blue-400 focus:outline-none"
-                          name="nombre"
-                          onChange={(event) => {
-                            const { name, value } = event.target
-                            handleEditChange(name, value)
-                          }}
-                          value={editedItem.nombre || ""}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Información de Ubicación */}
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 pb-2 border-b border-slate-700">
@@ -678,7 +652,8 @@ export default function Departamentos() {
                         <div className="relative">
                           <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                           <input
-                            type="text"
+                            type="number"
+                            step="0.01"
                             className="w-full pl-10 pr-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-slate-300 focus:border-blue-400 focus:outline-none"
                             name="precio"
                             onChange={(event) => {
@@ -691,24 +666,25 @@ export default function Departamentos() {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="block text-sm font-medium text-slate-300">Área *</label>
+                        <label className="block text-sm font-medium text-slate-300">Área (m²) *</label>
                         <div className="relative">
                           <Maximize className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                           <input
-                            type="text"
+                            type="number"
+                            step="0.01"
                             className="w-full pl-10 pr-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-slate-300 focus:border-blue-400 focus:outline-none"
-                            name="area"
+                            name="area_m2"
                             onChange={(event) => {
                               const { name, value } = event.target
                               handleEditChange(name, value)
                             }}
-                            value={editedItem.area || ""}
+                            value={editedItem.area_m2 || ""}
                           />
                         </div>
                       </div>
 
                       <div className="space-y-2">
-                        <label className="block text-sm font-medium text-slate-300">Habitaciones *</label>
+                        <label className="block text-sm font-medium text-slate-300">Habitaciones</label>
                         <div className="relative">
                           <Bed className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                           <input
@@ -725,7 +701,7 @@ export default function Departamentos() {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="block text-sm font-medium text-slate-300">Baños *</label>
+                        <label className="block text-sm font-medium text-slate-300">Baños</label>
                         <div className="relative">
                           <Bath className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                           <input
@@ -764,19 +740,19 @@ export default function Departamentos() {
                             value={editedItem.tipo || ""}
                           >
                             <option value="">Seleccionar tipo...</option>
-                            <option value="Departamento">Departamento</option>
-                            <option value="Casa">Casa</option>
-                            <option value="Lote">Lote</option>
-                            <option value="Penthouse">Penthouse</option>
-                            <option value="Estudio">Estudio</option>
-                            <option value="Loft">Loft</option>
-                            <option value="Dúplex">Dúplex</option>
+                            <option value="departamento">Departamento</option>
+                            <option value="casa">Casa</option>
+                            <option value="lote">Lote</option>
+                            <option value="penthouse">Penthouse</option>
+                            <option value="estudio">Estudio</option>
+                            <option value="loft">Loft</option>
+                            <option value="duplex">Dúplex</option>
                           </select>
                         </div>
                       </div>
 
                       <div className="space-y-2">
-                        <label className="block text-sm font-medium text-slate-300">Estado *</label>
+                        <label className="block text-sm font-medium text-slate-300">Estado</label>
                         <div className="relative">
                           <CheckCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                           <select
@@ -789,15 +765,38 @@ export default function Departamentos() {
                             value={editedItem.estado || ""}
                           >
                             <option value="">Seleccionar estado...</option>
-                            <option value="Disponible">Disponible</option>
-                            <option value="Reservado">Reservado</option>
-                            <option value="Vendido">Vendido</option>
-                            <option value="Agotado">Agotado</option>
-                            <option value="En Construcción">En Construcción</option>
-                            <option value="Próximamente">Próximamente</option>
+                            <option value="disponible">Disponible</option>
+                            <option value="reservado">Reservado</option>
+                            <option value="vendido">Vendido</option>
+                            <option value="agotado">Agotado</option>
+                            <option value="construccion">En Construcción</option>
+                            <option value="proximamente">Próximamente</option>
                           </select>
                         </div>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Descripción */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-700">
+                      <Home className="w-5 h-5 text-blue-400" />
+                      <h3 className="text-lg font-semibold text-white">Descripción</h3>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-slate-300">
+                        Descripción del Departamento
+                      </label>
+                      <textarea
+                        className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-slate-300 focus:border-blue-400 focus:outline-none resize-none"
+                        name="descripcion"
+                        rows="4"
+                        onChange={(event) => {
+                          const { name, value } = event.target
+                          handleEditChange(name, value)
+                        }}
+                        value={editedItem.descripcion || ""}
+                      />
                     </div>
                   </div>
                 </form>

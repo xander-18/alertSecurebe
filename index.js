@@ -285,6 +285,32 @@ app.delete("/clientes/:id", async (req, res) => {
   }
 });
 
+app.put("/clientes/:id/potencial", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verificar si el cliente existe
+    const clienteRef = db.collection(CLIENTE_COLLECTION).doc(id);
+    const clienteDoc = await clienteRef.get();
+
+    if (!clienteDoc.exists) {
+      return res.status(404).json({ error: "Cliente no encontrado" });
+    }
+
+    // Actualizar campo is_potential
+    await clienteRef.update({
+      is_potential: true,
+      updated_at: new Date(),
+    });
+
+    res.json({
+      status: "ok",
+      message: "Cliente marcado como potencial correctamente",
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 // ==================== DEPARTAMENTOS ====================
 app.get("/departamentos", async (req, res) => {
   try {
