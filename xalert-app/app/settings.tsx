@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,21 +7,43 @@ import {
   Switch,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
-import { useAuth } from '@/lib/auth-context';
+import { useAuth } from '@/services/auth-context';
 
 export default function SettingsScreen() {
-  const { logout } = useAuth();
-  const [notifications, setNotifications] = useState(true);
+  const { logout, user } = useAuth();
+  const [notifications, setNotifications] = useState(true); 
   const [soundAlerts, setSoundAlerts] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [sensorData, setSensorData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchSensorData();
+  }, []);
+
+  const fetchSensorData = async () => {
+    try {
+      const response = await fetch('https://alertsecurebe.onrender.com/sensor');
+      const data = await response.json();
+      setSensorData(data);
+    } catch (error) {
+      console.error('Error fetching sensor:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     Alert.alert(
-      'Sesión cerrada',
-      'Has cerrado sesión exitosamente',
-      [{ text: 'OK', onPress: () => logout() }]
+      'Cerrar Sesión',
+      '¿Estás seguro que deseas salir?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Salir', onPress: () => logout(), style: 'destructive' }
+      ]
     );
   };
 
@@ -43,7 +65,7 @@ export default function SettingsScreen() {
             </View>
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>Administrador</Text>
-              <Text style={styles.profileEmail}>admin@blackrock.com</Text>
+              <Text style={styles.profileEmail}>{user?.email || 'admin@blackrock.com'}</Text>
             </View>
             <Feather name="chevron-right" size={20} color="#9CA3AF" />
           </View>
@@ -87,44 +109,6 @@ export default function SettingsScreen() {
             </View>
           </View>
         </View>
-
-        {/* System Settings */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={styles.cardTitleRow}>
-              <Ionicons name="settings-outline" size={20} color="#10B981" />
-              <Text style={styles.cardTitle}>Sistema</Text>
-            </View>
-            <Text style={styles.cardDescription}>Configuración general</Text>
-          </View>
-
-          <View style={styles.cardContent}>
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingLabel}>Actualización Automática</Text>
-                <Text style={styles.settingDescription}>Refresca datos cada 30 segundos</Text>
-              </View>
-              <Switch
-                value={autoRefresh}
-                onValueChange={setAutoRefresh}
-                trackColor={{ false: '#374151', true: '#10B981' }}
-                thumbColor="#fff"
-              />
-            </View>
-
-            <TouchableOpacity style={styles.menuButton}>
-              <View style={styles.menuButtonContent}>
-                <MaterialIcons name="security" size={20} color="#10B981" />
-                <View style={styles.menuButtonInfo}>
-                  <Text style={styles.menuButtonTitle}>Gestión de Sensores</Text>
-                  <Text style={styles.menuButtonSubtitle}>6 sensores activos</Text>
-                </View>
-              </View>
-              <Feather name="chevron-right" size={20} color="#9CA3AF" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
         {/* About */}
         <View style={styles.card}>
           <TouchableOpacity style={styles.aboutButton}>

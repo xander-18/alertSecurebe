@@ -1,31 +1,28 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { AuthProvider } from '@/lib/auth-context';
+import { AuthProvider, useAuth } from '@/services/auth-context';
+import LoginScreen from '@/components/LoginScreen';
 
-export default function TabLayout() {
+function TabsLayout() {
+  const { isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
+    return <LoginScreen />;
+  }
+
   return (
-    <AuthProvider>
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#4ECDC4', 
+        tabBarActiveTintColor: '#10B981',
         tabBarInactiveTintColor: '#8B9DB5',
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#2C3E50',
+          backgroundColor: '#1F2937',
           borderTopWidth: 0,
           paddingBottom: 8,
           paddingTop: 8,
           height: 70,
         },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '500',
-        },
-        tabBarItemStyle: {
-          borderRadius: 12,
-          marginHorizontal: 4,
-        },
-        tabBarActiveBackgroundColor: '#34495E', 
       }}
     >
       <Tabs.Screen
@@ -65,6 +62,13 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
-      </AuthProvider>
-    );
+  );
+}
+
+export default function TabLayout() {
+  return (
+    <AuthProvider>
+      <TabsLayout />
+    </AuthProvider>
+  );
 }
