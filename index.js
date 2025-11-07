@@ -21,6 +21,8 @@ initializeApp({
   }),
 });
 
+
+
 const db = getFirestore();
 const SENSOR_COLLECTION = "sensores";
 const MEDICION_COLLECTION = "mediciones"; 
@@ -30,6 +32,193 @@ const CLIENTE_COLLECTION = "clientes";
 const DEPARTAMENTO_COLLECTION = "departamentos";
 const VENTA_COLLECTION = "ventas";
 
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_API_URL = process.env.GEMINI_API_URL;
+
+app.post("/ai/consulta", async (req, res) => {
+  try {
+    const { pregunta, incluirDatos } = req.body;
+    
+    if (!pregunta) {
+      return res.status(400).json({ error: "La pregunta es requerida" });
+    }
+
+    let contexto = "Información disponible:\n\n";
+    
+    const datosAIncluir = incluirDatos || ["ventas", "clientes", "departamentos", "leads"];
+    
+    if (datosAIncluir.includes("ventas")) {
+      const ventasSnapshot = await db.collection(VENTA_COLLECTION).orderBy("created_at", "desc").limit(50).get();
+      const ventas = ventasSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      contexto += `VENTAS (${ventas.length} registros):\n${JSON.stringify(ventas, null, 2)}\n\n`;
+    }
+    
+    if (datosAIncluir.includes("clientes")) {
+      const clientesSnapshot = await db.collection(CLIENTE_COLLECTION).orderBy("created_at", "desc").limit(50).get();
+      const clientes = clientesSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      contexto += `CLIENTES (${clientes.length} registros):\n${JSON.stringify(clientes, null, 2)}\n\n`;
+    }
+    
+    if (datosAIncluir.includes("departamentos")) {
+      const deptosSnapshot = await db.collection(DEPARTAMENTO_COLLECTION).orderBy("created_at", "desc").limit(50).get();
+      const departamentos = deptosSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      contexto += `DEPARTAMENTOS (${departamentos.length} registros):\n${JSON.stringify(departamentos, null, 2)}\n\n`;
+    }
+    
+    if (datosAIncluir.includes("leads")) {
+      const leadsSnapshot = await db.collection(LEAD_COLLECTION).orderBy("fecha_registro", "desc").limit(50).get();
+      const leads = leadsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      contexto += `LEADS (${leads.length} registros):\n${JSON.stringify(leads, null, 2)}\n\n`;
+    }
+
+    const promptCompleto = `Eres un asistente inteligente de un sistema CRM inmobiliario. 
+    
+Tienes acceso a la siguiente información de la base de datos:
+
+${contexto}
+
+PREGUNTA DEL USUARIO: ${pregunta}
+
+INSTRUCCIONES:
+- Analiza los datos proporcionados
+- Responde de forma clara y precisa
+- Si necesitas hacer cálculos, hazlos
+- Si la pregunta requiere datos que no están disponibles, indícalo
+- Proporciona insights útiles cuando sea relevante
+- Responde en español
+- Si hay fechas, formátealas de manera legible
+
+Responde ahora:`;
+
+    // 3. Llamar a la API de Gemini
+    const geminiResponse = await fetch(GEMINI_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": GEMINI_API_KEY,
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: promptCompleto,
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 2048,
+        },
+      }),
+    });
+
+    if (!geminiResponse.ok) {
+      const errorData = await geminiResponse.text();
+      throw new Error(`Error de Gemini API: ${geminiResponse.status} - ${errorData}`);
+    }
+
+    const geminiData = await geminiResponse.json();
+    
+    const respuestaIA = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo generar una respuesta";
+
+    res.json({
+      status: "ok",
+      pregunta: pregunta,
+      respuesta: respuestaIA,
+      timestamp: new Date().toISOString(),
+    });
+
+  } catch (err) {
+    console.error("Error en consulta AI:", err);
+    res.status(500).json({ 
+      error: err.message,
+      details: "Error al procesar la consulta con IA"
+    });
+  }
+});
+
+// ==================== ENDPOINT ALTERNATIVO: CONSULTA ESPECÍFICA ====================
+app.post("/ai/analisis", async (req, res) => {
+  try {
+    const { tipo, periodo } = req.body;
+    
+    let pregunta = "";
+    let datosAIncluir = [];
+    
+    switch(tipo) {
+      case "ventas_mes":
+        pregunta = "¿Cuántas ventas se realizaron este mes y cuál es el monto total?";
+        datosAIncluir = ["ventas"];
+        break;
+      case "clientes_potenciales":
+        pregunta = "¿Cuántos clientes potenciales tenemos y cuál es su perfil?";
+        datosAIncluir = ["clientes"];
+        break;
+      case "departamentos_disponibles":
+        pregunta = "¿Qué departamentos están disponibles y cuáles son sus características principales?";
+        datosAIncluir = ["departamentos"];
+        break;
+      case "resumen_general":
+        pregunta = "Dame un resumen general del negocio: ventas, clientes, departamentos y leads";
+        datosAIncluir = ["ventas", "clientes", "departamentos", "leads"];
+        break;
+      default:
+        return res.status(400).json({ error: "Tipo de análisis no válido" });
+    }
+
+    const response = await fetch(`/ai/consulta`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ pregunta, incluirDatos: datosAIncluir }),
+    });
+
+    const data = await response.json();
+    res.json(data);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/ai/test", async (req, res) => {
+  try {
+    const testResponse = await fetch(GEMINI_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": GEMINI_API_KEY,
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: "Responde solo con 'OK' si puedes leer este mensaje",
+              },
+            ],
+          },
+        ],
+      }),
+    });
+
+    const data = await testResponse.json();
+    res.json({ 
+      status: "Conexión exitosa con Gemini", 
+      response: data 
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      error: "Error conectando con Gemini",
+      details: err.message 
+    });
+  }
+});
 
 app.get("/sensor", async (req, res) => {
   try {
