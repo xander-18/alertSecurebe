@@ -10,7 +10,8 @@ export const API_URL_LEADS = API_HOST + 'leads';
 export const API_URL_CLIENTES = API_HOST + 'clientes';
 export const API_URL_DEPARTAMENTOS = API_HOST + 'departamentos';
 export const API_URL_VENTAS = API_HOST + 'ventas';
-
+export const API_URL_GEMINI = API_HOST + 'ai/consulta';
+export const API_URL_GEMINI_ANALISIS = API_HOST + 'ai/analisis';
 // export function getSession(key) {
 //   const sessionData = localStorage.getItem(key);
 //   if (sessionData) {

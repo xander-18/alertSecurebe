@@ -9,9 +9,13 @@ import Clientes from './views/contact/Clientes'
 import Departamentos from './views/departaments/Departamento'
 import Ventas from './views/ventas/Ventas'
 
+import ChatBot from './components/AgentIA'
+
 function App() {
   return (
     <BrowserRouter>
+      <ChatBot />
+
       <Routes>
         <Route path="/login" element={<Login />} />
 
@@ -25,13 +29,15 @@ function App() {
             </ProtectedRoute>
           }
         />
-          <Route path="/usuarios" element={
+
+        <Route path="/usuarios" element={
           <ProtectedRoute>
             <AdminLayout>
               <Usuarios />
             </AdminLayout>
           </ProtectedRoute>
         } />
+
         <Route path="/clientes" element={
           <ProtectedRoute>
             <AdminLayout>
@@ -39,6 +45,7 @@ function App() {
             </AdminLayout>
           </ProtectedRoute>
         } />
+
         <Route path="/departamentos" element={
           <ProtectedRoute>
             <AdminLayout>
@@ -46,6 +53,7 @@ function App() {
             </AdminLayout>
           </ProtectedRoute>
         } />
+
         <Route path="/ventas" element={
           <ProtectedRoute>
             <AdminLayout>
@@ -59,3 +67,4 @@ function App() {
 }
 
 export default App
+
