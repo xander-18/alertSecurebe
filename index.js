@@ -45,33 +45,59 @@ app.post("/ai/consulta", async (req, res) => {
 
     let contexto = "Información disponible:\n\n";
     
-    const datosAIncluir = incluirDatos || ["ventas", "clientes", "departamentos", "leads"];
+    // Por defecto incluir todos los tipos de datos
+    const datosAIncluir = incluirDatos || [
+      "ventas", 
+      "clientes", 
+      "departamentos", 
+      "leads", 
+      "sensores", 
+      "mediciones"
+    ];
     
+    // VENTAS
     if (datosAIncluir.includes("ventas")) {
       const ventasSnapshot = await db.collection(VENTA_COLLECTION).orderBy("created_at", "desc").limit(50).get();
       const ventas = ventasSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       contexto += `VENTAS (${ventas.length} registros):\n${JSON.stringify(ventas, null, 2)}\n\n`;
     }
     
+    // CLIENTES
     if (datosAIncluir.includes("clientes")) {
       const clientesSnapshot = await db.collection(CLIENTE_COLLECTION).orderBy("created_at", "desc").limit(50).get();
       const clientes = clientesSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       contexto += `CLIENTES (${clientes.length} registros):\n${JSON.stringify(clientes, null, 2)}\n\n`;
     }
     
+    // DEPARTAMENTOS
     if (datosAIncluir.includes("departamentos")) {
       const deptosSnapshot = await db.collection(DEPARTAMENTO_COLLECTION).orderBy("created_at", "desc").limit(50).get();
       const departamentos = deptosSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       contexto += `DEPARTAMENTOS (${departamentos.length} registros):\n${JSON.stringify(departamentos, null, 2)}\n\n`;
     }
     
+    // LEADS
     if (datosAIncluir.includes("leads")) {
       const leadsSnapshot = await db.collection(LEAD_COLLECTION).orderBy("fecha_registro", "desc").limit(50).get();
       const leads = leadsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       contexto += `LEADS (${leads.length} registros):\n${JSON.stringify(leads, null, 2)}\n\n`;
     }
 
-    const promptCompleto = `Eres un asistente inteligente de un sistema CRM inmobiliario. 
+    // SENSORES
+    if (datosAIncluir.includes("sensores")) {
+      const sensoresSnapshot = await db.collection(SENSOR_COLLECTION).get();
+      const sensores = sensoresSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      contexto += `SENSORES (${sensores.length} registros):\n${JSON.stringify(sensores, null, 2)}\n\n`;
+    }
+
+    // MEDICIONES
+    if (datosAIncluir.includes("mediciones")) {
+      const medicionesSnapshot = await db.collection(MEDICION_COLLECTION).orderBy("fecha", "desc").limit(100).get();
+      const mediciones = medicionesSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      contexto += `MEDICIONES (${mediciones.length} registros más recientes):\n${JSON.stringify(mediciones, null, 2)}\n\n`;
+    }
+
+    const promptCompleto = `Eres un asistente inteligente de un sistema CRM inmobiliario con monitoreo IoT. 
     
 Tienes acceso a la siguiente información de la base de datos:
 
@@ -80,17 +106,19 @@ ${contexto}
 PREGUNTA DEL USUARIO: ${pregunta}
 
 INSTRUCCIONES:
-- Analiza los datos proporcionados
+- Analiza los datos proporcionados (ventas, clientes, departamentos, leads, sensores y mediciones)
 - Responde de forma clara y precisa
 - Si necesitas hacer cálculos, hazlos
 - Si la pregunta requiere datos que no están disponibles, indícalo
 - Proporciona insights útiles cuando sea relevante
+- Para datos de sensores, analiza: estado, ubicación, última actividad, tendencias
+- Para mediciones, identifica: patrones, anomalías, valores promedio, picos
 - Responde en español
 - Si hay fechas, formátealas de manera legible
 
 Responde ahora:`;
 
-    // 3. Llamar a la API de Gemini
+    // Llamar a la API de Gemini
     const geminiResponse = await fetch(GEMINI_API_URL, {
       method: "POST",
       headers: {
@@ -141,7 +169,7 @@ Responde ahora:`;
   }
 });
 
-// ==================== ENDPOINT ALTERNATIVO: CONSULTA ESPECÍFICA ====================
+// ==================== ENDPOINT ALTERNATIVO: ANÁLISIS ESPECÍFICO ====================
 app.post("/ai/analisis", async (req, res) => {
   try {
     const { tipo, periodo } = req.body;
@@ -162,15 +190,28 @@ app.post("/ai/analisis", async (req, res) => {
         pregunta = "¿Qué departamentos están disponibles y cuáles son sus características principales?";
         datosAIncluir = ["departamentos"];
         break;
+      case "estado_sensores":
+        pregunta = "¿Cuál es el estado actual de todos los sensores? ¿Hay alguno inactivo o con problemas?";
+        datosAIncluir = ["sensores", "mediciones"];
+        break;
+      case "analisis_movimiento":
+        pregunta = "Analiza los patrones de movimiento detectados por los sensores en las últimas mediciones";
+        datosAIncluir = ["sensores", "mediciones"];
+        break;
+      case "alertas_sensores":
+        pregunta = "¿Hay sensores que no han registrado actividad recientemente o con valores anormales?";
+        datosAIncluir = ["sensores", "mediciones"];
+        break;
       case "resumen_general":
-        pregunta = "Dame un resumen general del negocio: ventas, clientes, departamentos y leads";
-        datosAIncluir = ["ventas", "clientes", "departamentos", "leads"];
+        pregunta = "Dame un resumen general del negocio: ventas, clientes, departamentos, leads y estado de sensores";
+        datosAIncluir = ["ventas", "clientes", "departamentos", "leads", "sensores", "mediciones"];
         break;
       default:
         return res.status(400).json({ error: "Tipo de análisis no válido" });
     }
 
-    const response = await fetch(`/ai/consulta`, {
+    // Hacer la consulta internamente
+    const response = await fetch(`http://localhost:${process.env.PORT || 3000}/ai/consulta`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

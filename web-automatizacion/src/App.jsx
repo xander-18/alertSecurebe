@@ -9,7 +9,7 @@ import Clientes from './views/contact/Clientes'
 import Departamentos from './views/departaments/Departamento'
 import Ventas from './views/ventas/Ventas'
 
-import ChatBot from './components/AgentIA'
+import ChatBot from './components/AgentIa'
 
 function App() {
   return (
