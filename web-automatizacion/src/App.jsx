@@ -1,5 +1,5 @@
 import './App.css'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import Dashboard from './components/Dashboard'
 import Login from './views/auth/Login'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -11,11 +11,15 @@ import Ventas from './views/ventas/Ventas'
 
 import ChatBot from './components/AgentIa'
 
-function App() {
-  return (
-    <BrowserRouter>
-      <ChatBot />
+function AppContent() {
+  const location = useLocation()
+  const isLoginPage = location.pathname === '/login'
 
+  return (
+    <>
+      {/* Solo mostrar ChatBot si NO estamos en la página de login */}
+      {!isLoginPage && <ChatBot />}
+      
       <Routes>
         <Route path="/login" element={<Login />} />
 
@@ -62,9 +66,16 @@ function App() {
           </ProtectedRoute>
         } />
       </Routes>
+    </>
+  )
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
     </BrowserRouter>
   )
 }
 
 export default App
-
