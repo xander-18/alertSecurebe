@@ -231,18 +231,16 @@ app.post("/ai/consulta-alerts", async (req, res) => {
 
     let contexto = "Información disponible del sistema de sensores:\n\n";
     
-    const datosAIncluir = incluirDatos || ["sensores", "mediciones"];
+    const datosAIncluir = incluirDatos || ["sensores", "mediciones", "alertas"];
     
-    // Obtener información de sensores
     if (datosAIncluir.includes("sensores")) {
-      const sensoresSnapshot = await db.collection(SENSOR_COLLECTION).get();
+      const sensoresSnapshot = await db.collection(SENSOR_COLLECTION).get();  // ← Debe usar SENSOR_COLLECTION
       const sensores = sensoresSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       contexto += `SENSORES (${sensores.length} registros):\n${JSON.stringify(sensores, null, 2)}\n\n`;
     }
     
-    // Obtener últimas mediciones
     if (datosAIncluir.includes("mediciones")) {
-      const medicionesSnapshot = await db.collection(MEDICION_COLLECTION)
+      const medicionesSnapshot = await db.collection(MEDICION_COLLECTION)  // ← Debe usar MEDICION_COLLECTION
         .orderBy("fecha", "desc")
         .limit(100)
         .get();
@@ -250,9 +248,8 @@ app.post("/ai/consulta-alerts", async (req, res) => {
       contexto += `MEDICIONES RECIENTES (${mediciones.length} registros):\n${JSON.stringify(mediciones, null, 2)}\n\n`;
     }
     
-    // Análisis de alertas (sensores inactivos o con problemas)
     if (datosAIncluir.includes("alertas")) {
-      const sensoresSnapshot = await db.collection(SENSOR_COLLECTION).get();
+      const sensoresSnapshot = await db.collection(SENSOR_COLLECTION).get();  // ← Debe usar SENSOR_COLLECTION
       const alertas = [];
       const ahora = new Date();
       
@@ -269,7 +266,6 @@ app.post("/ai/consulta-alerts", async (req, res) => {
           });
         }
         
-        // Detectar sensores sin actividad reciente (más de 1 hora)
         if (sensor.lastActivity) {
           const ultimaActividad = new Date(sensor.lastActivity);
           const diferenciaHoras = (ahora - ultimaActividad) / (1000 * 60 * 60);
@@ -310,7 +306,6 @@ INSTRUCCIONES:
 
 Responde ahora:`;
 
-    // Llamar a la API de Gemini
     const geminiResponse = await fetch(GEMINI_API_URL, {
       method: "POST",
       headers: {
@@ -357,163 +352,6 @@ Responde ahora:`;
     res.status(500).json({ 
       error: err.message,
       details: "Error al procesar la consulta con IA"
-    });
-  }
-});
-
-// ==================== ENDPOINT ALTERNATIVO: ANÁLISIS ESPECÍFICO DE SENSORES ====================
-app.post("/ai/analisis-alerts", async (req, res) => {
-  try {
-    const { tipo } = req.body;
-    
-    let pregunta = "";
-    let datosAIncluir = [];
-    
-    switch(tipo) {
-      case "estado_general":
-        pregunta = "¿Cuál es el estado general de todos los sensores? ¿Hay alguno inactivo o con problemas?";
-        datosAIncluir = ["sensores", "alertas"];
-        break;
-      case "mediciones_recientes":
-        pregunta = "¿Cuáles son las últimas mediciones registradas y hay alguna anomalía?";
-        datosAIncluir = ["sensores", "mediciones"];
-        break;
-      case "alertas_criticas":
-        pregunta = "¿Qué sensores tienen alertas críticas o requieren atención inmediata?";
-        datosAIncluir = ["sensores", "mediciones", "alertas"];
-        break;
-      case "resumen_completo":
-        pregunta = "Dame un resumen completo del sistema: estado de sensores, mediciones recientes y alertas";
-        datosAIncluir = ["sensores", "mediciones", "alertas"];
-        break;
-      case "tendencias":
-        pregunta = "¿Cuáles son las tendencias en las mediciones de los sensores?";
-        datosAIncluir = ["sensores", "mediciones"];
-        break;
-      default:
-        return res.status(400).json({ error: "Tipo de análisis no válido" });
-    }
-
-    // Construir contexto directamente
-    let contexto = "Información disponible del sistema de sensores:\n\n";
-    
-    if (datosAIncluir.includes("sensores")) {
-      const sensoresSnapshot = await db.collection(SENSOR_COLLECTION).get();
-      const sensores = sensoresSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      contexto += `SENSORES (${sensores.length} registros):\n${JSON.stringify(sensores, null, 2)}\n\n`;
-    }
-    
-    if (datosAIncluir.includes("mediciones")) {
-      const medicionesSnapshot = await db.collection(MEDICION_COLLECTION)
-        .orderBy("fecha", "desc")
-        .limit(100)
-        .get();
-      const mediciones = medicionesSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      contexto += `MEDICIONES RECIENTES (${mediciones.length} registros):\n${JSON.stringify(mediciones, null, 2)}\n\n`;
-    }
-    
-    if (datosAIncluir.includes("alertas")) {
-      const sensoresSnapshot = await db.collection(SENSOR_COLLECTION).get();
-      const alertas = [];
-      const ahora = new Date();
-      
-      sensoresSnapshot.docs.forEach((doc) => {
-        const sensor = doc.data();
-        if (sensor.status === "inactive" || sensor.status === "warning") {
-          alertas.push({
-            id: doc.id,
-            nombre: sensor.name,
-            tipo: sensor.type,
-            ubicacion: sensor.location,
-            estado: sensor.status,
-            ultimaActividad: sensor.lastActivity
-          });
-        }
-        
-        if (sensor.lastActivity) {
-          const ultimaActividad = new Date(sensor.lastActivity);
-          const diferenciaHoras = (ahora - ultimaActividad) / (1000 * 60 * 60);
-          if (diferenciaHoras > 1) {
-            alertas.push({
-              id: doc.id,
-              nombre: sensor.name,
-              tipo: "inactividad",
-              mensaje: `Sin actividad desde hace ${diferenciaHoras.toFixed(1)} horas`,
-              ultimaActividad: sensor.lastActivity
-            });
-          }
-        }
-      });
-      
-      contexto += `ALERTAS DETECTADAS (${alertas.length} alertas):\n${JSON.stringify(alertas, null, 2)}\n\n`;
-    }
-
-    const promptCompleto = `Eres un asistente inteligente de un sistema de monitoreo de sensores IoT.
-
-Tienes acceso a la siguiente información del sistema:
-
-${contexto}
-
-PREGUNTA DEL USUARIO: ${pregunta}
-
-INSTRUCCIONES:
-- Analiza los datos de sensores y mediciones proporcionados
-- Identifica patrones, anomalías o alertas importantes
-- Si hay sensores inactivos o con problemas, menciónalos claramente
-- Responde de forma clara y precisa
-- Si necesitas hacer cálculos o estadísticas, hazlos
-- Proporciona recomendaciones cuando sea relevante
-- Responde en español
-- Formatea fechas de manera legible
-
-Responde ahora:`;
-
-    const geminiResponse = await fetch(GEMINI_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": GEMINI_API_KEY,
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: promptCompleto,
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 2048,
-        },
-      }),
-    });
-
-    if (!geminiResponse.ok) {
-      const errorData = await geminiResponse.text();
-      throw new Error(`Error de Gemini API: ${geminiResponse.status} - ${errorData}`);
-    }
-
-    const geminiData = await geminiResponse.json();
-    const respuestaIA = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo generar una respuesta";
-
-    res.json({
-      status: "ok",
-      tipo: tipo,
-      pregunta: pregunta,
-      respuesta: respuestaIA,
-      timestamp: new Date().toISOString(),
-    });
-
-  } catch (err) {
-    console.error("Error en análisis AI de sensores:", err);
-    res.status(500).json({ 
-      error: err.message,
-      details: "Error al procesar el análisis con IA"
     });
   }
 });
