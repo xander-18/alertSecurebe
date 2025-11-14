@@ -8,13 +8,16 @@ import Sensores from './view/sensor/Sensores';
 import Login from './view/auth/Login'
 import ProtectedRoute from './components/ProtectedRoute';
 import Configuración from './view/configuracion/Config.jsx'; 
+import ChatBot from './components/AgentIa.jsx';
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
 
+  
   return (
     <BrowserRouter>
+
       <Routes>
         {/* Ruta pública */}
         <Route 
@@ -23,7 +26,6 @@ function App() {
             isAuthenticated ? <Navigate to="/" replace /> : <Login />
           } 
         />
-
         {/* Rutas protegidas */}
         <Route
           path="/*"
@@ -45,6 +47,8 @@ function App() {
           }
         />
       </Routes>
+        <ChatBot/>
+
     </BrowserRouter>
   );
 }
