@@ -2,7 +2,6 @@ import { useState } from "react"
 import { MessageCircle, X, Send, Loader2 } from "lucide-react"
 import { API_URL_GEMINI } from "../../common/common"
 
-
 export default function ChatBot() {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState([
@@ -15,6 +14,20 @@ export default function ChatBot() {
   ])
   const [inputValue, setInputValue] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+
+  const cleanMarkdown = (text) => {
+    return text
+      .replace(/\*\*/g, '')           
+      .replace(/\*/g, '')            
+      .replace(/#{1,6}\s/g, '')      
+      .replace(/`{1,3}/g, '')        
+      .replace(/^[-•]\s/gm, '')     
+      .replace(/^\d+\.\s/gm, '')     
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')  
+      .replace(/_{1,2}/g, '')         
+      .replace(/~{2}/g, '')           
+      .trim()
+  }
 
   const handleSendMessage = async () => {
     if (inputValue.trim() === "" || isLoading) return
@@ -48,9 +61,12 @@ export default function ChatBot() {
 
       const data = await response.json()
 
+      // Limpiar la respuesta antes de mostrarla
+      const respuestaLimpia = cleanMarkdown(data.respuesta || "Lo siento, no pude generar una respuesta.")
+
       const botMessage = {
         id: messages.length + 2,
-        text: data.respuesta || "Lo siento, no pude generar una respuesta.",
+        text: respuestaLimpia,
         sender: "bot",
         timestamp: new Date(),
       }
