@@ -71,26 +71,24 @@ app.post("/ai/consulta", async (req, res) => {
       contexto += `LEADS (${leads.length} registros):\n${JSON.stringify(leads, null, 2)}\n\n`;
     }
 
-    const promptCompleto = `Eres un asistente inteligente de un sistema CRM inmobiliario. 
-    
-Tienes acceso a la siguiente información de la base de datos:
+    const promptCompleto = `Eres un asistente de CRM inmobiliario. Analiza los datos y responde de forma BREVE y DIRECTA.
 
 ${contexto}
 
-PREGUNTA DEL USUARIO: ${pregunta}
+PREGUNTA: ${pregunta}
 
-INSTRUCCIONES:
-- Analiza los datos proporcionados
-- Responde de forma clara y precisa
-- Si necesitas hacer cálculos, hazlos
-- Si la pregunta requiere datos que no están disponibles, indícalo
-- Proporciona insights útiles cuando sea relevante
-- Responde en español
-- Si hay fechas, formátealas de manera legible
+REGLAS CRÍTICAS:
+- Responde en máximo 2-3 oraciones cortas
+- NO uses markdown (nada de **, ##, -, *, listas, etc.)
+- NO uses emojis ni símbolos decorativos
+- Responde en texto plano simple
+- Ve directo al grano, sin introducciones
+- Si mencionas nombres o IDs, hazlo en texto normal
+- Formatea fechas de manera simple (ej: 15 de enero 2024)
+- Si no hay datos, di simplemente "No hay información disponible"
 
-Responde ahora:`;
+Responde:`;
 
-    // 3. Llamar a la API de Gemini
     const geminiResponse = await fetch(GEMINI_API_URL, {
       method: "POST",
       headers: {
@@ -108,10 +106,10 @@ Responde ahora:`;
           },
         ],
         generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 2048,
+          temperature: 0.3,
+          topK: 20,
+          topP: 0.8,
+          maxOutputTokens: 300,
         },
       }),
     });
@@ -123,7 +121,16 @@ Responde ahora:`;
 
     const geminiData = await geminiResponse.json();
     
-    const respuestaIA = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo generar una respuesta";
+    let respuestaIA = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo generar una respuesta";
+    
+    // Limpiar cualquier markdown que se haya colado
+    respuestaIA = respuestaIA
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .replace(/#{1,6}\s/g, '')
+      .replace(/`{1,3}/g, '')
+      .replace(/^[-•]\s/gm, '')
+      .trim();
 
     res.json({
       status: "ok",
@@ -229,18 +236,18 @@ app.post("/ai/consulta-alerts", async (req, res) => {
       return res.status(400).json({ error: "La pregunta es requerida" });
     }
 
-    let contexto = "Información disponible del sistema de sensores:\n\n";
+    let contexto = "Información del sistema de sensores:\n\n";
     
     const datosAIncluir = incluirDatos || ["sensores", "mediciones", "alertas"];
     
     if (datosAIncluir.includes("sensores")) {
-      const sensoresSnapshot = await db.collection(SENSOR_COLLECTION).get();  // ← Debe usar SENSOR_COLLECTION
+      const sensoresSnapshot = await db.collection(SENSOR_COLLECTION).get();
       const sensores = sensoresSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       contexto += `SENSORES (${sensores.length} registros):\n${JSON.stringify(sensores, null, 2)}\n\n`;
     }
     
     if (datosAIncluir.includes("mediciones")) {
-      const medicionesSnapshot = await db.collection(MEDICION_COLLECTION)  // ← Debe usar MEDICION_COLLECTION
+      const medicionesSnapshot = await db.collection(MEDICION_COLLECTION)
         .orderBy("fecha", "desc")
         .limit(100)
         .get();
@@ -249,7 +256,7 @@ app.post("/ai/consulta-alerts", async (req, res) => {
     }
     
     if (datosAIncluir.includes("alertas")) {
-      const sensoresSnapshot = await db.collection(SENSOR_COLLECTION).get();  // ← Debe usar SENSOR_COLLECTION
+      const sensoresSnapshot = await db.collection(SENSOR_COLLECTION).get();
       const alertas = [];
       const ahora = new Date();
       
@@ -284,27 +291,23 @@ app.post("/ai/consulta-alerts", async (req, res) => {
       contexto += `ALERTAS DETECTADAS (${alertas.length} alertas):\n${JSON.stringify(alertas, null, 2)}\n\n`;
     }
 
-    const promptCompleto = `Eres un asistente inteligente de un sistema de monitoreo de sensores IoT.
-
-Tienes acceso a la siguiente información del sistema:
+    const promptCompleto = `Eres un asistente de monitoreo IoT. Analiza los datos y responde de forma BREVE y DIRECTA.
 
 ${contexto}
 
-PREGUNTA DEL USUARIO: ${pregunta}
+PREGUNTA: ${pregunta}
 
-INSTRUCCIONES:
-- Analiza los datos de sensores y mediciones proporcionados
-- Identifica patrones, anomalías o alertas importantes
-- Si hay sensores inactivos o con problemas, menciónalos claramente
-- Si hay mediciones fuera de rango normal, indícalo
-- Responde de forma clara y precisa
-- Si necesitas hacer cálculos o estadísticas, hazlos
-- Proporciona recomendaciones cuando sea relevante
-- Si la pregunta requiere datos que no están disponibles, indícalo
-- Responde en español
-- Formatea fechas de manera legible
+REGLAS CRÍTICAS:
+- Responde en máximo 2-3 oraciones cortas
+- NO uses markdown (nada de **, ##, -, *, listas, etc.)
+- NO uses emojis ni símbolos decorativos
+- Responde en texto plano simple
+- Ve directo al grano, sin introducciones
+- Si hay alertas, menciónalas directamente sin formato
+- Formatea fechas de manera simple
+- Si no hay problemas, di simplemente "Todo normal"
 
-Responde ahora:`;
+Responde:`;
 
     const geminiResponse = await fetch(GEMINI_API_URL, {
       method: "POST",
@@ -323,10 +326,10 @@ Responde ahora:`;
           },
         ],
         generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 2048,
+          temperature: 0.3,
+          topK: 20,
+          topP: 0.8,
+          maxOutputTokens: 300,
         },
       }),
     });
@@ -338,7 +341,16 @@ Responde ahora:`;
 
     const geminiData = await geminiResponse.json();
     
-    const respuestaIA = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo generar una respuesta";
+    let respuestaIA = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo generar una respuesta";
+    
+    // Limpiar cualquier markdown que se haya colado
+    respuestaIA = respuestaIA
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .replace(/#{1,6}\s/g, '')
+      .replace(/`{1,3}/g, '')
+      .replace(/^[-•]\s/gm, '')
+      .trim();
 
     res.json({
       status: "ok",
