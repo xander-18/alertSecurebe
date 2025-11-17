@@ -1,7 +1,8 @@
 import { useState } from "react"
 import { MessageCircle, X, Send, Loader2 } from "lucide-react"
 // import { API_URL_GEMINI } from "../common/common"
-import { API_URL_GEMINI } from "../../../web-automatizacion/common/common"
+// import { API_URL_GEMINI } from "../../../web-automatizacion/common/common"
+import { API_URL_GEMINI } from "../common/common"
 export default function ChatBot() {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState([
