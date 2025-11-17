@@ -17,7 +17,6 @@ function App() {
   
   return (
     <BrowserRouter>
-
       <Routes>
         {/* Ruta pública */}
         <Route 
@@ -26,6 +25,7 @@ function App() {
             isAuthenticated ? <Navigate to="/" replace /> : <Login />
           } 
         />
+        
         {/* Rutas protegidas */}
         <Route
           path="/*"
@@ -42,13 +42,13 @@ function App() {
                     <Route path="/settings" element={<Configuración/>} />
                   </Routes>
                 </div>
+                {/* ChatBot solo dentro de rutas protegidas */}
+                <ChatBot/>
               </div>
             </ProtectedRoute>
           }
         />
       </Routes>
-        <ChatBot/>
-
     </BrowserRouter>
   );
 }
