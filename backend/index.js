@@ -625,8 +625,8 @@ app.delete("/clientes/:id", async (req, res) => {
 app.put("/clientes/:id/potencial", async (req, res) => {
   try {
     const { id } = req.params;
+    const { is_potential } = req.body; 
 
-    // Verificar si el cliente existe
     const clienteRef = db.collection(CLIENTE_COLLECTION).doc(id);
     const clienteDoc = await clienteRef.get();
 
@@ -634,20 +634,20 @@ app.put("/clientes/:id/potencial", async (req, res) => {
       return res.status(404).json({ error: "Cliente no encontrado" });
     }
 
-    // Actualizar campo is_potential
     await clienteRef.update({
-      is_potential: true,
+      is_potential: is_potential, 
       updated_at: new Date(),
     });
 
     res.json({
       status: "ok",
-      message: "Cliente marcado como potencial correctamente",
+      message: `Cliente ${is_potential ? "marcado como" : "removido de"} potencial correctamente`,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
 // ==================== DEPARTAMENTOS ====================
 app.get("/departamentos", async (req, res) => {
   try {
