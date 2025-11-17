@@ -11,6 +11,8 @@ export const API_URL_HISTORICO = API_URL + "historico/";
 export const API_URL_REGISTER = API_URL + "register/";
 export const API_URL_LOGIN = API_URL + "login/";
 export const API_URL_USERS = API_URL + "usuarios/";
+export const API_URL_GEMINI = API_HOST + '/ai/consulta-alerts';
+export const API_URL_GEMINI_ANALISIS = API_HOST + 'ai/analisis';
 
 export function getSession(key) {
   const sessionData = localStorage.getItem(key);
