@@ -163,27 +163,40 @@ const columns = [
     }
 
 
-  const handleTogglePotential = async (clientId, currentStatus) => {
-    try {
-      const newStatus = !Boolean(currentStatus)
-      setFilteredRows(prevRows => 
-        prevRows.map(row => 
-          row.id === clientId 
-            ? { ...row, is_potential: newStatus ? 1 : 0 }
-            : row
-        )
+ const handleTogglePotential = async (clientId, currentStatus) => {
+  try {
+    // Cambiar estado actual (si es 1 pasa a 0, si es 0 pasa a 1)
+    const newStatus = currentStatus ? 0 : 1;
+
+    // Actualiza inmediatamente la tabla (optimistic UI)
+    setFilteredRows(prevRows =>
+      prevRows.map(row =>
+        row.id === clientId
+          ? { ...row, is_potential: newStatus }
+          : row
       )
-      await fetchAPIAsync(`${API_URL_VERIFY_POTENTIAL}/${clientId}`, { 
-        is_potential: newStatus 
-      }, "POST")
-      notificationSwal("success", `Cliente ${newStatus ? "marcado como" : "removido de"} potencial`)
-    } catch (error) {
-      console.error('Error:', error)
-      notificationSwal("error", "Error al actualizar estado del cliente")
-      // Si falla, recargar los datos
-      SearchFilter(page)
-    }
+    );
+
+    // Actualiza en el backend
+    await fetchAPIAsync(
+      `${API_URL_CLIENTES}/${clientId}/potencial`,
+      { is_potential: newStatus },
+      "PUT"
+    );
+
+    notificationSwal(
+      "success",
+      `Cliente ${newStatus === 1 ? "marcado como" : "removido de"} potencial`
+    );
+
+  } catch (error) {
+    console.error("Error:", error);
+    notificationSwal("error", "Error al actualizar estado del cliente");
+    SearchFilter(page);
   }
+};
+
+
 
     const handleAddNotes = (client) => {
       setSelectedClient(client)
