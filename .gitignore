@@ -6,3 +6,5 @@
 adminmcp-aa2ea-firebase-adminsdk-fbsvc-13627046bc.json
 
 /node_modules
+node_modules/
+web/node_modules/
