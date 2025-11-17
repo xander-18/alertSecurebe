@@ -87,16 +87,38 @@ const Sensores = () => {
     }
   }
 
-  const handleDelete = (sensorId) => {
-    confirmSwal(
-      '¿Estás seguro?',
-      'Esta acción eliminará el sensor solo localmente.',
-      () => {
-        setSensors((prev) => prev.filter((s) => s.id !== sensorId))
-        notificationSwal('success', 'Sensor eliminado')
+ const handleDelete = async (sensorId) => {
+  confirmSwal(
+    "¿Estás seguro?",
+    "Esta acción eliminará el sensor del sistema.",
+    async () => {
+
+      try {
+        // 🔥 1. Eliminar en BACKEND
+        const res = await fetch(`${API_URL_SENSORES}/${sensorId}`, {
+          method: "DELETE",
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          notificationSwal("error", data.error || "Error al eliminar sensor");
+          return;
+        }
+
+        // 🧹 2. Eliminar LOCALMENTE
+        setSensors((prev) => prev.filter((s) => s.id !== sensorId));
+
+        notificationSwal("success", "Sensor eliminado correctamente");
+
+      } catch (error) {
+        notificationSwal("error", "No se pudo eliminar el sensor");
+        console.error(error);
       }
-    )
-  }
+
+    }
+  );
+};
 
   if (loading) {
     return (
